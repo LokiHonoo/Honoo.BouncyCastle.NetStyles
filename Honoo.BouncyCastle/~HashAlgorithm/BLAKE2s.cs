@@ -12,6 +12,7 @@ namespace Honoo.BouncyCastle
     {
         #region Properties
 
+        private const string NAME = "BLAKE2s";
         private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(8, 256, 8) };
         private readonly byte[] _key;
         private readonly byte[] _personalization;
@@ -28,7 +29,7 @@ namespace Honoo.BouncyCastle
         /// <param name="key">Key need null or less than 32 bytes.</param>
         /// <param name="salt">Salt need null or less than 8 bytes.</param>
         /// <param name="personalization">Personalization need null or less than 8 bytes.</param>
-        public BLAKE2s(int hashSize, byte[] key = null, byte[] salt = null, byte[] personalization = null) : base($"BLAKE2s{hashSize}", hashSize)
+        public BLAKE2s(int hashSize, byte[] key = null, byte[] salt = null, byte[] personalization = null) : base($"{NAME}{hashSize}", hashSize)
         {
             if (!DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
             {
@@ -68,7 +69,7 @@ namespace Honoo.BouncyCastle
 
         internal static HashAlgorithmName GetAlgorithmName(int hashSize)
         {
-            return new HashAlgorithmName($"BLAKE2s{hashSize}",
+            return new HashAlgorithmName($"{NAME}{hashSize}",
                                          hashSize,
                                          () => { return new Blake2sDigest(hashSize); },
                                          () => { return new BLAKE2s(hashSize); });

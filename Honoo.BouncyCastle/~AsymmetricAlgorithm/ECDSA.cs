@@ -1,16 +1,24 @@
-﻿using Org.BouncyCastle.Asn1.Anssi;
+﻿using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.Anssi;
 using Org.BouncyCastle.Asn1.CryptoPro;
 using Org.BouncyCastle.Asn1.GM;
 using Org.BouncyCastle.Asn1.Nist;
+using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.Rosstandart;
 using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.TeleTrust;
+using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
+using Org.BouncyCastle.Math.EC.Multiplier;
 using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.X509;
+using System;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -19,11 +27,12 @@ namespace Honoo.BouncyCastle
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class ECDSA : AsymmetricAlgorithm
+    public sealed class ECDSA : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
     {
         #region Properties
 
         private const EllipticCurve DEFAULT_CURVE = EllipticCurve.Prime256v1;
+        private const string NAME = "ECDSA";
         private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
         private bool _initialized = false;
         private AsymmetricKeyParameter _privateKey = null;
@@ -32,9 +41,7 @@ namespace Honoo.BouncyCastle
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
-        /// <summary>
-        /// Get or set Hash algorithm for signature.
-        /// </summary>
+        /// <inheritdoc/>
         public HashAlgorithmName HashAlgorithm
         {
             get => _hashAlgorithm;
@@ -49,25 +56,8 @@ namespace Honoo.BouncyCastle
             }
         }
 
-        /// <summary>
-        /// Gets signature algorithm name.
-        /// </summary>
-        public string SignatureAlgorithm
-        {
-            get
-            {
-                string suffix;
-                switch (_signatureExtension)
-                {
-                    case ECDSASignatureExtension.ECDSA: suffix = "ECDSA"; break;
-                    case ECDSASignatureExtension.ECNR: suffix = "ECNR"; break;
-                    case ECDSASignatureExtension.Plain: suffix = "PLAIN-ECDSA"; break;
-                    case ECDSASignatureExtension.CVC: suffix = "CVC-ECDSA"; break;
-                    default: throw new CryptographicException("Unsupported signature extension.");
-                }
-                return $"{_hashAlgorithm.Name}with{suffix}";
-            }
-        }
+        /// <inheritdoc/>
+        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm, _signatureExtension);
 
         /// <summary>
         /// Represents the signature extension used in the symmetric algorithm.
@@ -93,7 +83,7 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Initializes a new instance of the ECDSA class.
         /// </summary>
-        public ECDSA() : base("ECDSA", AsymmetricAlgorithmKind.Signature)
+        public ECDSA() : base(NAME, AsymmetricAlgorithmKind.Signature)
         {
         }
 
@@ -108,43 +98,9 @@ namespace Honoo.BouncyCastle
             return new ECDSA();
         }
 
-        /// <summary>
-        /// Exports a pem string containing the asymmetric algorithm key information associated.
-        /// </summary>
-        /// <param name="includePrivate">true to include the private key; otherwise, false.</param>
-        /// <returns></returns>
-        public string ExportPem(bool includePrivate)
-        {
-            InspectKey();
-            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(asymmetricKey);
-                return writer.ToString();
-            }
-        }
+        #region GenerateParameters
 
-        /// <summary>
-        /// Exports a pem string containing the asymmetric algorithm private key information associated.
-        /// </summary>
-        /// <param name="dekAlgorithmName">DEK algorithm name.</param>
-        /// <param name="password"></param>
-        /// <returns></returns>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            InspectKey();
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
-                return writer.ToString();
-            }
-        }
-
-        /// <summary>
-        /// Renew private key and public key of the algorithm by default.
-        /// </summary>
+        /// <inheritdoc/>
         public void GenerateParameters()
         {
             GenerateParameters(DEFAULT_CURVE);
@@ -156,7 +112,7 @@ namespace Honoo.BouncyCastle
         /// <param name="ellipticCurve">Elliptic curve to be uesd.</param>
         public void GenerateParameters(EllipticCurve ellipticCurve = DEFAULT_CURVE)
         {
-            X9ECParameters x9Parameters = GenerateX9(ellipticCurve);
+            X9ECParameters x9Parameters = GetX9ECParameters(ellipticCurve);
             ECDomainParameters domainParameters = new ECDomainParameters(x9Parameters);
             ECKeyGenerationParameters generationParameters = new ECKeyGenerationParameters(domainParameters, Common.SecureRandom);
             ECKeyPairGenerator generator = new ECKeyPairGenerator();
@@ -169,45 +125,129 @@ namespace Honoo.BouncyCastle
             _initialized = true;
         }
 
-        /// <summary>
-        /// Imports a pem string that represents asymmetric algorithm key information.
-        /// </summary>
-        /// <param name="pem">A pem string that represents an asymmetric algorithm key.</param>
+        #endregion GenerateParameters
+
+        #region Export/Import Parameters
+
+        /// <inheritdoc/>
+        public byte[] ExportKeyInfo(bool includePrivate)
+        {
+            InspectParameters();
+            if (includePrivate)
+            {
+                PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(_privateKey);
+                return privateKeyInfo.GetEncoded();
+            }
+            else
+            {
+                SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(_publicKey);
+                return publicKeyInfo.GetEncoded();
+            }
+        }
+
+        /// <inheritdoc/>
+        public byte[] ExportKeyInfo(PBEAlgorithmName pbeAlgorithmName, string password)
+        {
+            InspectParameters();
+            byte[] salt = new byte[16];
+            Common.SecureRandom.NextBytes(salt);
+            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
+                pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
+            return enc.GetEncoded();
+        }
+
+        /// <inheritdoc/>
+        public string ExportPem(bool includePrivate)
+        {
+            InspectParameters();
+            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
+            using (StringWriter writer = new StringWriter())
+            {
+                PemWriter pemWriter = new PemWriter(writer);
+                pemWriter.WriteObject(asymmetricKey);
+                return writer.ToString();
+            }
+        }
+
+        /// <inheritdoc/>
+        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
+        {
+            InspectParameters();
+            using (StringWriter writer = new StringWriter())
+            {
+                PemWriter pemWriter = new PemWriter(writer);
+                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
+                return writer.ToString();
+            }
+        }
+
+        /// <inheritdoc/>
+        public void ImportKeyInfo(byte[] keyInfo)
+        {
+            ECPrivateKeyParameters privateKey = null;
+            ECPublicKeyParameters publicKey = null;
+            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            try
+            {
+                PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
+                privateKey = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                var q = new FixedPointCombMultiplier().Multiply(privateKey.Parameters.G, privateKey.D);
+                publicKey = new ECPublicKeyParameters(privateKey.AlgorithmName, q, privateKey.Parameters);
+            }
+            catch
+            {
+                try
+                {
+                    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
+                    publicKey = (ECPublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                }
+                catch
+                {
+                }
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public void ImportKeyInfo(byte[] keyInfo, string password)
+        {
+            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
+            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
+            ECPrivateKeyParameters privateKey = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            var q = new FixedPointCombMultiplier().Multiply(privateKey.Parameters.G, privateKey.D);
+            ECPublicKeyParameters publicKey = new ECPublicKeyParameters(privateKey.AlgorithmName, q, privateKey.Parameters);
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
         public void ImportPem(string pem)
         {
             using (StringReader reader = new StringReader(pem))
             {
+                ECPrivateKeyParameters privateKey = null;
+                ECPublicKeyParameters publicKey;
                 object obj = new PemReader(reader).ReadObject();
                 if (obj.GetType() == typeof(AsymmetricCipherKeyPair))
                 {
                     AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair)obj;
-                    _privateKey = (ECPrivateKeyParameters)keyPair.Private;
-                    _publicKey = keyPair.Public;
+                    privateKey = (ECPrivateKeyParameters)keyPair.Private;
+                    publicKey = (ECPublicKeyParameters)keyPair.Public;
                 }
                 else
                 {
-                    _privateKey = null;
-                    _publicKey = (ECPublicKeyParameters)obj;
+                    publicKey = (ECPublicKeyParameters)obj;
                 }
-                _signer = null;
-                _verifier = null;
-                _initialized = true;
-            }
-        }
-
-        /// <summary>
-        /// Imports a pem string that represents asymmetric algorithm private key information.
-        /// </summary>
-        /// <param name="pem">A pem string that represents an asymmetric algorithm private key.</param>
-        /// <param name="password"></param>
-        public void ImportPem(string pem, string password)
-        {
-            using (StringReader reader = new StringReader(pem))
-            {
-                object obj = new PemReader(reader, new Password(password)).ReadObject();
-                AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair)obj;
-                _privateKey = (ECPrivateKeyParameters)keyPair.Private;
-                _publicKey = keyPair.Public;
+                _privateKey = privateKey;
+                _publicKey = publicKey;
                 _signer = null;
                 _verifier = null;
                 _initialized = true;
@@ -215,119 +255,139 @@ namespace Honoo.BouncyCastle
         }
 
         /// <inheritdoc/>
-        public override void Reset()
+        public void ImportPem(string pem, string password)
+        {
+            using (StringReader reader = new StringReader(pem))
+            {
+                object obj = new PemReader(reader, new Password(password)).ReadObject();
+                AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair)obj;
+                _privateKey = (ECPrivateKeyParameters)keyPair.Private;
+                _publicKey = (ECPublicKeyParameters)keyPair.Public;
+                _signer = null;
+                _verifier = null;
+                _initialized = true;
+            }
+        }
+
+        #endregion Export/Import Parameters
+
+        /// <inheritdoc/>
+        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public override IKeyExchangeA GetKeyExchangeAInterface()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public override IKeyExchangeB GetKeyExchangeBInterface()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
+        {
+            return this;
+        }
+
+        /// <inheritdoc/>
+        public void ResetSigner()
         {
             _signer.Reset();
             _verifier.Reset();
         }
 
-        /// <summary>
-        /// Signs the specified input bytes using the specified hash algorithm.
-        /// </summary>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public byte[] SignFinal()
         {
-            InspectKey();
+            InspectParameters();
             InspectSigner(true);
             return _signer.GenerateSignature();
         }
 
-        /// <summary>
-        /// Signs the specified input bytes using the specified hash algorithm.
-        /// </summary>
-        /// <param name="rgb">The input data for which to sign.</param>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public byte[] SignFinal(byte[] rgb)
         {
-            return SignFinal(rgb, 0, rgb.Length);
+            SignUpdate(rgb, 0, rgb.Length);
+            return SignFinal();
         }
 
-        /// <summary>
-        /// Signs the specified input bytes using the specified hash algorithm.
-        /// </summary>
-        /// <param name="buffer">The data buffer.</param>
-        /// <param name="offset">The starting offset to read.</param>
-        /// <param name="length">The length to read.</param>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public byte[] SignFinal(byte[] buffer, int offset, int length)
         {
-            InspectKey();
-            InspectSigner(true);
-            _signer.BlockUpdate(buffer, offset, length);
-            return _signer.GenerateSignature();
+            SignUpdate(buffer, offset, length);
+            return SignFinal();
         }
 
-        /// <summary>
-        /// Signs the specified input bytes using the specified hash algorithm.
-        /// </summary>
-        /// <param name="buffer">The data buffer.</param>
-        /// <param name="offset">The starting offset to read.</param>
-        /// <param name="length">The length to read.</param>
+        /// <inheritdoc/>
         public void SignUpdate(byte[] buffer, int offset, int length)
         {
-            InspectKey();
+            InspectParameters();
             InspectSigner(true);
             _signer.BlockUpdate(buffer, offset, length);
         }
 
-        /// <summary>
-        /// Verifies that a digital signature of the specified input bytes using the specified hash algorithm.
-        /// </summary>
-        /// <param name="signature">The signature data to be verified.</param>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public bool VerifyFinal(byte[] signature)
         {
-            InspectKey();
+            InspectParameters();
             InspectSigner(false);
             return _verifier.VerifySignature(signature);
         }
 
-        /// <summary>
-        /// Verifies that a digital signature of the specified input bytes using the specified hash algorithm.
-        /// </summary>
-        /// <param name="rgb">The input data for which to compute the hash.</param>
-        /// <param name="signature">The signature data to be verified.</param>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public bool VerifyFinal(byte[] rgb, byte[] signature)
         {
-            return VerifyFinal(rgb, 0, rgb.Length, signature);
+            VerifyUpdate(rgb, 0, rgb.Length);
+            return VerifyFinal(signature);
         }
 
-        /// <summary>
-        /// Verifies that a digital signature of the specified input bytes using the specified hash algorithm.
-        /// </summary>
-        /// <param name="buffer">The data buffer.</param>
-        /// <param name="offset">The starting offset to read.</param>
-        /// <param name="length">The length to read.</param>
-        /// <param name="signature">The signature data to be verified.</param>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public bool VerifyFinal(byte[] buffer, int offset, int length, byte[] signature)
         {
-            InspectKey();
-            InspectSigner(false);
-            _verifier.BlockUpdate(buffer, offset, length);
-            return _verifier.VerifySignature(signature);
+            VerifyUpdate(buffer, offset, length);
+            return VerifyFinal(signature);
         }
 
-        /// <summary>
-        /// Verifies that a digital signature of the specified input bytes using the specified hash algorithm.
-        /// </summary>
-        /// <param name="buffer">The data buffer.</param>
-        /// <param name="offset">The starting offset to read.</param>
-        /// <param name="length">The length to read.</param>
+        /// <inheritdoc/>
         public void VerifyUpdate(byte[] buffer, int offset, int length)
         {
-            InspectKey();
+            InspectParameters();
             InspectSigner(false);
             _verifier.BlockUpdate(buffer, offset, length);
         }
 
         internal static AsymmetricAlgorithmName GetAlgorithmName()
         {
-            return new AsymmetricAlgorithmName("ECDSA", AsymmetricAlgorithmKind.Signature, () => { return new ECDSA(); });
+            return new AsymmetricAlgorithmName(NAME, AsymmetricAlgorithmKind.Signature, () => { return new ECDSA(); });
         }
 
-        private static X9ECParameters GenerateX9(EllipticCurve ellipticCurve)
+        internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm, ECDSASignatureExtension signatureExtension)
+        {
+            return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm, signatureExtension),
+                                              () => { return new ECDSA() { HashAlgorithm = hashAlgorithm, SignatureExtension = signatureExtension }; });
+        }
+
+        private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm, ECDSASignatureExtension signatureExtension)
+        {
+            string suffix;
+            switch (signatureExtension)
+            {
+                case ECDSASignatureExtension.ECDSA: suffix = "ECDSA"; break;
+                case ECDSASignatureExtension.ECNR: suffix = "ECNR"; break;
+                case ECDSASignatureExtension.Plain: suffix = "PLAIN-ECDSA"; break;
+                case ECDSASignatureExtension.CVC: suffix = "CVC-ECDSA"; break;
+                default: throw new CryptographicException("Unsupported signature extension.");
+            }
+            return $"{hashAlgorithm.Name}with{suffix}";
+        }
+
+        private static X9ECParameters GetX9ECParameters(EllipticCurve ellipticCurve)
         {
             switch (ellipticCurve)
             {
@@ -441,7 +501,7 @@ namespace Honoo.BouncyCastle
             }
         }
 
-        private void InspectKey()
+        private void InspectParameters()
         {
             if (!_initialized)
             {

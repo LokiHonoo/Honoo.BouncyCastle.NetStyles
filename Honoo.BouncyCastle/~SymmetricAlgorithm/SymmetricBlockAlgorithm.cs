@@ -20,10 +20,20 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Gets legal iv size bits.
         /// </summary>
-        public override KeySizes[] LegalIVSizes => GetIVSizes();
+        public override KeySizes[] LegalIVSizes => GetLegalIVSizes();
 
         /// <summary>
-        /// Gets or sets the mode for operation of the symmetric algorithm.
+        /// Gets legal mac size bits.
+        /// </summary>
+        public KeySizes[] LegalMacSizes => GetLegalMacSizes();
+
+        /// <summary>
+        /// Gets legal nonce size bits.
+        /// </summary>
+        public KeySizes[] LegalNonceSizes => GetLegalIVSizes();
+
+        /// <summary>
+        /// Gets or sets the mode for operation of the symmetric algorithm. The parameters recreated if change this operation.
         /// </summary>
         public override SymmetricCipherMode Mode
         {
@@ -42,7 +52,7 @@ namespace Honoo.BouncyCastle
         }
 
         /// <summary>
-        /// Gets or sets the padding mode used in the symmetric algorithm.
+        /// Gets or sets the padding mode used in the symmetric algorithm. The parameters recreated if change this operation.
         /// </summary>
         public override SymmetricPaddingMode Padding
         {
@@ -51,8 +61,10 @@ namespace Honoo.BouncyCastle
             {
                 if (value != _padding)
                 {
+                    _parameters = null;
                     _encryptor = null;
                     _decryptor = null;
+                    _initialized = false;
                 }
                 _padding = value;
             }
@@ -109,10 +121,20 @@ namespace Honoo.BouncyCastle
         /// <param name="associatedText">Import associated text bytes.</param>
         public void ImportParameters(byte[] key, byte[] nonce, int macSize, byte[] associatedText)
         {
-            _keySize = key.Length * 8;
-            _ivSize = nonce.Length * 8;
+            int keySize = key.Length * 8;
+            int nonceSize = nonce.Length * 8;
+            if (!ValidKeySize(keySize, out string exception))
+            {
+                throw new CryptographicException(exception);
+            }
+            if (!ValidNonceSize(nonceSize, out exception))
+            {
+                throw new CryptographicException(exception);
+            }
             // BouncyCastle has not clone nonce and associatedText.
             _parameters = new AeadParameters(GetKeyParameter(key), macSize, (byte[])nonce.Clone(), (byte[])associatedText.Clone());
+            _keySize = keySize;
+            _ivSize = nonceSize;
             _encryptor = null;
             _decryptor = null;
             _initialized = true;
@@ -121,7 +143,13 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         public override bool ValidIVSize(int ivSize, out string exception)
         {
-            if (DetectionUtilities.ValidSize(GetIVSizes(), ivSize))
+            KeySizes[] legalIVSizes = GetLegalIVSizes();
+            if (legalIVSizes == null)
+            {
+                exception = "Unsupported symmetric algorithm block size or cipher mode.";
+                return false;
+            }
+            else if (DetectionUtilities.ValidSize(legalIVSizes, ivSize))
             {
                 exception = string.Empty;
                 return true;
@@ -130,21 +158,107 @@ namespace Honoo.BouncyCastle
             {
                 switch (_mode)
                 {
-                    case SymmetricCipherMode.CBC: exception = $"Legal IV size {_blockSize} bits."; break;
-                    case SymmetricCipherMode.ECB: exception = $"Not need IV."; break;
-                    case SymmetricCipherMode.OFB: exception = $"Legal IV size between 8 and {_blockSize} bits (8 bits increments)."; break;
-                    case SymmetricCipherMode.CFB: exception = $"Legal IV size between 8 and {_blockSize} bits (8 bits increments)."; break;
-                    case SymmetricCipherMode.CTS: exception = $"Legal IV size {_blockSize} bits."; break;
-                    case SymmetricCipherMode.CTR: exception = $"Legal IV size between {Math.Max(_blockSize / 2, _blockSize - 64)} and {_blockSize} bits (8 bits increments)."; break;
-                    case SymmetricCipherMode.CTS_ECB: exception = $"Not need IV."; break;
-                    case SymmetricCipherMode.GOFB: exception = $"Legal IV size {_blockSize} bits."; break;
-                    case SymmetricCipherMode.OpenPGPCFB: exception = $"Legal IV size between 8 and {_blockSize} bits (8 bits increments)."; break;
-                    case SymmetricCipherMode.SIC: exception = $"Legal IV size between {Math.Max(_blockSize / 2, _blockSize - 64)} and {_blockSize} bits (8 bits increments)."; break;
-                    case SymmetricCipherMode.CCM: exception = $"Legal IV size between 56 and 104 bits (8 bits increments)."; break;
-                    case SymmetricCipherMode.EAX: exception = $"Legal IV size is more than or equal to 8 bits (8 bits increments)."; break;
-                    case SymmetricCipherMode.GCM: exception = $"Legal IV size is more than or equal to 8 bits (8 bits increments)."; break;
-                    case SymmetricCipherMode.OCB: exception = $"Legal IV size between 8 and 120 bits (8 bits increments)."; break;
-                    default: throw new CryptographicException("Unsupported cipher mode.");
+                    case SymmetricCipherMode.CBC: exception = $"Legal iv size {_blockSize} bits."; break;
+                    case SymmetricCipherMode.ECB: exception = "Not need iv."; break;
+                    case SymmetricCipherMode.OFB: exception = $"Legal iv size between 8 and {_blockSize} bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.CFB: exception = $"Legal iv size between 8 and {_blockSize} bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.CTS: exception = $"Legal iv size {_blockSize} bits."; break;
+                    case SymmetricCipherMode.CTR: exception = $"Legal iv size between {Math.Max(_blockSize / 2, _blockSize - 64)} and {_blockSize} bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.CTS_ECB: exception = "Not need iv."; break;
+                    case SymmetricCipherMode.GOFB: exception = $"Legal iv size {_blockSize} bits."; break;
+                    case SymmetricCipherMode.OpenPGPCFB: exception = $"Legal iv size between 8 and {_blockSize} bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.SIC: exception = $"Legal iv size between {Math.Max(_blockSize / 2, _blockSize - 64)} and {_blockSize} bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.CCM: exception = "Legal iv size between 56 and 104 bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.EAX: exception = "Legal iv size is more than or equal to 8 bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.GCM: exception = "Legal iv size is more than or equal to 8 bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.OCB: exception = "Legal iv size between 8 and 120 bits (8 bits increments)."; break;
+                    default: exception = "Unsupported cipher mode."; break;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified size is valid for the current algorithm.
+        /// </summary>
+        /// <param name="macSize">Mac size bits.</param>
+        /// <param name="exception">Exception message.</param>
+        /// <returns></returns>
+        public bool ValidMacSize(int macSize, out string exception)
+        {
+            KeySizes[] legalMacSizes = GetLegalMacSizes();
+            if (legalMacSizes == null)
+            {
+                exception = "Unsupported symmetric algorithm block size or cipher mode.";
+                return false;
+            }
+            else if (DetectionUtilities.ValidSize(legalMacSizes, macSize))
+            {
+                exception = string.Empty;
+                return true;
+            }
+            else
+            {
+                switch (_mode)
+                {
+                    case SymmetricCipherMode.CBC:
+                    case SymmetricCipherMode.ECB:
+                    case SymmetricCipherMode.OFB:
+                    case SymmetricCipherMode.CFB:
+                    case SymmetricCipherMode.CTS:
+                    case SymmetricCipherMode.CTR:
+                    case SymmetricCipherMode.CTS_ECB:
+                    case SymmetricCipherMode.GOFB:
+                    case SymmetricCipherMode.OpenPGPCFB:
+                    case SymmetricCipherMode.SIC: exception = "Need AEAD cipher mode CCM/EAX/GCM/OCB."; break;
+                    case SymmetricCipherMode.CCM: exception = "Legal mac size 32-128 bits (16 bits increments)."; break;
+                    case SymmetricCipherMode.EAX: exception = "Legal mac size is more than or equal to 8 bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.GCM: exception = "Legal mac size 32-128 bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.OCB: exception = "Legal mac size 64-128 bits (8 bits increments)."; break;
+                    default: exception = "Unsupported cipher mode."; break;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Determines whether the specified size is valid for the current algorithm.
+        /// </summary>
+        /// <param name="nonceSize">Nonce size bits.</param>
+        /// <param name="exception">Exception message.</param>
+        /// <returns></returns>
+        public bool ValidNonceSize(int nonceSize, out string exception)
+        {
+            KeySizes[] legalNonceSizes = GetLegalIVSizes();
+            if (legalNonceSizes == null)
+            {
+                exception = "Unsupported symmetric algorithm block size or cipher mode.";
+                return false;
+            }
+            else if (DetectionUtilities.ValidSize(legalNonceSizes, nonceSize))
+            {
+                exception = string.Empty;
+                return true;
+            }
+            else
+            {
+                switch (_mode)
+                {
+                    case SymmetricCipherMode.CBC:
+                    case SymmetricCipherMode.ECB:
+                    case SymmetricCipherMode.OFB:
+                    case SymmetricCipherMode.CFB:
+                    case SymmetricCipherMode.CTS:
+                    case SymmetricCipherMode.CTR:
+                    case SymmetricCipherMode.CTS_ECB:
+                    case SymmetricCipherMode.GOFB:
+                    case SymmetricCipherMode.OpenPGPCFB:
+                    case SymmetricCipherMode.SIC: exception = "Need AEAD cipher mode CCM/EAX/GCM/OCB."; break;
+                    case SymmetricCipherMode.CCM: exception = "Legal nonce size between 56 and 104 bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.EAX: exception = "Legal nonce size is more than or equal to 8 bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.GCM: exception = "Legal nonce size is more than or equal to 8 bits (8 bits increments)."; break;
+                    case SymmetricCipherMode.OCB: exception = "Legal nonce size between 8 and 120 bits (8 bits increments)."; break;
+                    default: exception = "Unsupported cipher mode."; break;
                 }
                 return false;
             }
@@ -256,7 +370,7 @@ namespace Honoo.BouncyCastle
 
                 case SymmetricCipherMode.GOFB:
                     if (_blockSize == 64)
-                    {                        
+                    {
                         cipher = pad == null ? new BufferedBlockCipher(new GOfbBlockCipher(engine))
                             : new PaddedBufferedBlockCipher(new GOfbBlockCipher(engine), pad);
                         break;
@@ -331,95 +445,44 @@ namespace Honoo.BouncyCastle
             return cipher;
         }
 
-        private KeySizes[] GetIVSizes()
+        private KeySizes[] GetLegalIVSizes()
         {
-            bool pad;
-            switch (_padding)
-            {
-                case SymmetricPaddingMode.NoPadding: pad = false; break;
-                case SymmetricPaddingMode.PKCS7:
-                case SymmetricPaddingMode.Zeros:
-                case SymmetricPaddingMode.X923:
-                case SymmetricPaddingMode.ISO10126:
-                case SymmetricPaddingMode.ISO7816_4:
-                case SymmetricPaddingMode.TBC: pad = true; break;
-                default: return new KeySizes[] { new KeySizes(0, 0, 0) };
-            }
             switch (_mode)
             {
                 case SymmetricCipherMode.CBC: return new KeySizes[] { new KeySizes(_blockSize, _blockSize, 0) };
                 case SymmetricCipherMode.ECB: return new KeySizes[] { new KeySizes(0, 0, 0) };
                 case SymmetricCipherMode.OFB: return new KeySizes[] { new KeySizes(8, _blockSize, 8) };
                 case SymmetricCipherMode.CFB: return new KeySizes[] { new KeySizes(8, _blockSize, 8) };
-                case SymmetricCipherMode.CTS:
-                    if (!pad)
-                    {
-                        return new KeySizes[] { new KeySizes(_blockSize, _blockSize, 0) };
-                    }
-                    break;
-
-                case SymmetricCipherMode.CTR:
-                    return new KeySizes[] { new KeySizes(Math.Max(_blockSize / 2, _blockSize - 64), _blockSize, 8) };
-
-                case SymmetricCipherMode.CTS_ECB:
-                    if (!pad)
-                    {
-                        return new KeySizes[] { new KeySizes(0, 0, 0) };
-                    }
-                    break;
-
-                case SymmetricCipherMode.GOFB:
-                    if (_blockSize == 64)
-                    {
-                        return new KeySizes[] { new KeySizes(_blockSize, _blockSize, 0) };
-                    }
-                    break;
-
+                case SymmetricCipherMode.CTS: return new KeySizes[] { new KeySizes(_blockSize, _blockSize, 0) };
+                case SymmetricCipherMode.CTR: return new KeySizes[] { new KeySizes(Math.Max(_blockSize / 2, _blockSize - 64), _blockSize, 8) };
+                case SymmetricCipherMode.CTS_ECB: return new KeySizes[] { new KeySizes(0, 0, 0) };
+                case SymmetricCipherMode.GOFB: if (_blockSize == 64) return new KeySizes[] { new KeySizes(_blockSize, _blockSize, 0) }; return null;
                 case SymmetricCipherMode.OpenPGPCFB: return new KeySizes[] { new KeySizes(8, _blockSize, 8) };
-                case SymmetricCipherMode.SIC:
-                    if (_blockSize >= 128)
-                    {
-                        int min = Math.Max(_blockSize / 2, _blockSize - 64);
-                        return new KeySizes[] { new KeySizes(min, _blockSize, 8) };
-                    }
-                    break;
+                case SymmetricCipherMode.SIC: if (_blockSize >= 128) return new KeySizes[] { new KeySizes(Math.Max(_blockSize / 2, _blockSize - 64), _blockSize, 8) }; return null;
+                case SymmetricCipherMode.CCM: if (_blockSize == 128) return new KeySizes[] { new KeySizes(56, 104, 8) }; return null;
+                case SymmetricCipherMode.EAX: if (_blockSize == 64 || _blockSize == 128) return new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) }; return null;
+                case SymmetricCipherMode.GCM: if (_blockSize == 128) return new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) }; return null;
 
-                case SymmetricCipherMode.CCM:
-                    if (!pad && _blockSize == 128)
-                    {
-                        return new KeySizes[] { new KeySizes(56, 104, 8) };
-                    }
-                    break;
+                /*
+                * BUG: OCB cipher mode supported null(0) Nonce/IV size but BouncyCastle cannot set that (BouncyCastle 1.9.0).
+                * So use limit min value 8.
+                */
+                case SymmetricCipherMode.OCB: if (_blockSize == 128) return new KeySizes[] { new KeySizes(8, 120, 8) }; return null;
 
-                case SymmetricCipherMode.EAX:
-                    if (!pad && (_blockSize == 64 || _blockSize == 128))
-                    {
-                        return new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) };
-                    }
-                    break;
-
-                case SymmetricCipherMode.GCM:
-                    if (!pad && _blockSize == 128)
-                    {
-                        return new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) };
-                    }
-                    break;
-
-                case SymmetricCipherMode.OCB:
-                    if (!pad && _blockSize == 128)
-                    {
-                        /*
-                         * BUG: OCB cipher mode supported null(0) Nonce/IV size but BouncyCastle cannot set that (BouncyCastle 1.9.0).
-                         * So use limit min value 8.
-                         */
-
-                        return new KeySizes[] { new KeySizes(8, 120, 8) };
-                    }
-                    break;
-
-                default: break;
+                default: return null;
             }
-            return new KeySizes[] { new KeySizes(0, 0, 0) };
+        }
+
+        private KeySizes[] GetLegalMacSizes()
+        {
+            switch (_mode)
+            {
+                case SymmetricCipherMode.CCM: return new KeySizes[] { new KeySizes(32, 128, 16) };
+                case SymmetricCipherMode.EAX: return new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) };
+                case SymmetricCipherMode.GCM: return new KeySizes[] { new KeySizes(32, 128, 8) };
+                case SymmetricCipherMode.OCB: return new KeySizes[] { new KeySizes(64, 128, 8) };
+                default: return null;
+            }
         }
     }
 }

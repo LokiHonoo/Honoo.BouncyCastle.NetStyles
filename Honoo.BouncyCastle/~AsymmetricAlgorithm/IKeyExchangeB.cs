@@ -1,10 +1,9 @@
 ﻿namespace Honoo.BouncyCastle
 {
-
     /// <summary>
     /// Key exchange algorithm party B's interface.
     /// </summary>
-    public interface IKeyExchangeB
+    public interface IKeyExchangeB : IAsymmetricAlgorithm
     {
         /// <summary>
         /// Sand this value to party A.

@@ -3,7 +3,7 @@
     /// <summary>
     /// Key exchange algorithm party A's interface.
     /// </summary>
-    public interface IKeyExchangeA
+    public interface IKeyExchangeA : IAsymmetricAlgorithm
     {
         /// <summary>
         /// Sand this value to party B.

@@ -78,7 +78,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public byte[] ComputeHash()
         {
-            InspectKey();
+            InspectParameters();
             if (_digest == null)
             {
                 _digest = GetDigest();
@@ -107,7 +107,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public byte[] ComputeHash(byte[] buffer, int offset, int length)
         {
-            InspectKey();
+            InspectParameters();
             if (_digest == null)
             {
                 _digest = GetDigest();
@@ -125,7 +125,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public void ExportParameters(out byte[] key)
         {
-            InspectKey();
+            InspectParameters();
             key = _parameters.GetKey();
         }
 
@@ -194,7 +194,7 @@ namespace Honoo.BouncyCastle
         /// <param name="length">The length to read.</param>
         public void Update(byte[] buffer, int offset, int length)
         {
-            InspectKey();
+            InspectParameters();
             if (_digest == null)
             {
                 _digest = GetDigest();
@@ -206,6 +206,7 @@ namespace Honoo.BouncyCastle
         /// Determines whether the specified size is valid for the current algorithm.
         /// </summary>
         /// <param name="keySize">Legal key size is more than or equal to 8 bits (8 bits increments).</param>
+        /// <param name="exception">Exception message.</param>
         /// <returns></returns>
         public bool ValidKeySize(int keySize, out string exception)
         {
@@ -228,7 +229,7 @@ namespace Honoo.BouncyCastle
             return digest;
         }
 
-        private void InspectKey()
+        private void InspectParameters()
         {
             if (!_initialized)
             {

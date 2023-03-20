@@ -40,7 +40,7 @@ namespace Honoo.BouncyCastle
         public int MacSize => _macSize;
 
         /// <summary>
-        /// Gets or sets the mode for operation of the symmetric algorithm.
+        /// Gets or sets the mode for operation of the symmetric algorithm. The parameters recreated if change this operation.
         /// <para/>MAC only supported CBC and CFB cipher mode.
         /// </summary>
         public SymmetricCipherMode Mode

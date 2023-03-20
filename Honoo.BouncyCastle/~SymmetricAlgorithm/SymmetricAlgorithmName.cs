@@ -75,7 +75,7 @@ namespace Honoo.BouncyCastle
         #region Stream Algorithm Names
 
         /// <summary>
-        /// ymmetric stream algorithm. Legal key size 128 bits. Legal IV size 0-128 bits (8 bits increments).
+        /// ymmetric stream algorithm. Legal key size 128 bits. Legal iv size 0-128 bits (8 bits increments).
         /// </summary>
         public static SymmetricAlgorithmName HC128 { get; } = Honoo.BouncyCastle.HC128.GetAlgorithmName();
 

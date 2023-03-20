@@ -1,4 +1,5 @@
 ﻿using Honoo.BouncyCastle;
+using System;
 
 namespace Test
 {
@@ -6,22 +7,33 @@ namespace Test
     {
         internal static void Test()
         {
-            byte[] input = new byte[123];
-            Common.Random.NextBytes(input);
-            DES des1 = new DES() { Mode = SymmetricCipherMode.GOFB, Padding = SymmetricPaddingMode.PKCS7 };
-            byte[] key = new byte[8];
-            byte[] iv = new byte[8];
-            Common.Random.NextBytes(key);
-            Common.Random.NextBytes(iv);
-            des1.ImportParameters(key, iv);
-            byte[] enc1 = des1.EncryptFinal(input);
-            des1.ExportParameters(out byte[] key1, out byte[] iv1);
-            byte[] enc2 = des1.EncryptFinal(input);
-            des1.ExportParameters(out byte[] key2, out byte[] iv2);
-            DES des2 = new DES() { Mode = SymmetricCipherMode.GOFB, Padding = SymmetricPaddingMode.PKCS7 };
-            des2.ImportParameters(key, iv);
-            byte[] dec1 = des2.DecryptFinal(enc1);
-            byte[] dec2 = des2.DecryptFinal(enc2);
+            ECGOST3410 alg1 = new ECGOST3410();
+            ECGOST3410 alg2 = new ECGOST3410();
+            string pem1 = alg1.ExportPem(DEKAlgorithmName.RC2_64_OFB, "12345");
+            string pem2 = alg1.ExportPem(true);
+            string pem3 = alg1.ExportPem(false);
+            alg2.ImportPem(pem1, "12345");
+            alg2.ImportPem(pem2);
+            alg2.ImportPem(pem3);
+            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
+            byte[] info2 = alg1.ExportKeyInfo(true);
+            byte[] info3 = alg1.ExportKeyInfo(false);
+            alg2.ImportKeyInfo(info1, "12345");
+            alg2.ImportKeyInfo(info2);
+            alg2.ImportKeyInfo(info3);
+
+            var ccc = (ECGOST3410EllipticCurve[])Enum.GetValues(typeof(ECGOST3410EllipticCurve));
+            foreach (var item in ccc)
+            {
+                alg1.GenerateParameters(item);
+                byte[] info = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
+                alg2.ImportKeyInfo(info, "12345");
+                info = alg1.ExportKeyInfo(true);
+                alg2.ImportKeyInfo(info);
+                info = alg1.ExportKeyInfo(false);
+                alg2.ImportKeyInfo(info);
+            }
+             Console.ReadKey(true);
         }
     }
 }

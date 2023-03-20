@@ -11,7 +11,7 @@
         CBC = 1,
 
         /// <summary>
-        /// Not need IV.
+        /// Not need iv.
         /// </summary>
         ECB,
 
@@ -32,13 +32,13 @@
         CTS,
 
         /// <summary>
-        /// The minimum IV size is the larger of (block size / 2) and (block size - 64) bits.
-        /// The maximum IV size is is same as block size. 8 bits increments.
+        /// The minimum iv size is the larger of (block size / 2) and (block size - 64) bits.
+        /// The maximum iv size is is same as block size. 8 bits increments.
         /// </summary>
         CTR = 101,
 
         /// <summary>
-        /// Not need IV.
+        /// Not need iv.
         /// <para/>This cipher mode can only select <see cref="SymmetricPaddingMode.NoPadding" /> padding mode.
         /// </summary>
         CTS_ECB,
@@ -56,8 +56,8 @@
         OpenPGPCFB,
 
         /// <summary>
-        /// The minimum IV size is the larger of (block size / 2) and (block size - 64) bits.
-        /// The maximum IV size is is same as block size. 8 bits increments.
+        /// The minimum iv size is the larger of (block size / 2) and (block size - 64) bits.
+        /// The maximum iv size is is same as block size. 8 bits increments.
         /// <para/>SIC cipher mode uses with a block size of 128 bits algorithm (e.g. AES).
         /// </summary>
         SIC,

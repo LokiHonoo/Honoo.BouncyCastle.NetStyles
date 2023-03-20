@@ -8,12 +8,19 @@ namespace Honoo.BouncyCastle
     /// </summary>
     public sealed class MD2 : HashAlgorithm
     {
+        #region Properties
+
+        private const int HASH_SIZE = 128;
+        private const string NAME = "MD2";
+
+        #endregion Properties
+
         #region Construction
 
         /// <summary>
         /// Initializes a new instance of the MD2 class.
         /// </summary>
-        public MD2() : base("MD2", 128)
+        public MD2() : base(NAME, HASH_SIZE)
         {
         }
 
@@ -30,8 +37,9 @@ namespace Honoo.BouncyCastle
 
         internal static HashAlgorithmName GetAlgorithmName()
         {
-            return new HashAlgorithmName("MD2", 128, () => { return new MD2Digest(); }, () => { return new MD2(); });
+            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new MD2Digest(); }, () => { return new MD2(); });
         }
+
         /// <inheritdoc/>
         protected override IDigest GetDigest()
         {

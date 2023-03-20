@@ -1,9 +1,9 @@
 ﻿namespace Honoo.BouncyCastle
 {
     /// <summary>
-    /// Asymmetric padding mode.
+    /// Asymmetric encryption padding mode.
     /// </summary>
-    public enum AsymmetricPaddingMode
+    public enum AsymmetricEncryptionPaddingMode
     {
         /// <summary>
         /// NoPadding padding mode.

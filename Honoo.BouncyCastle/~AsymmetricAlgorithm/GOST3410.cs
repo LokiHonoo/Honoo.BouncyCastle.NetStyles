@@ -1,5 +1,6 @@
 ﻿using Honoo.BouncyCastle.Utilities;
 using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.CryptoPro;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
@@ -14,30 +15,25 @@ using Org.BouncyCastle.X509;
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Xml.Linq;
 
 namespace Honoo.BouncyCastle
 {
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class DSA : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
+    public sealed class GOST3410 : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
     {
         #region Properties
 
-        private const int DEFAULT_CERTAINTY = 80;
-        private const int DEFAULT_KEY_SIZE = 1024;
-        private const string NAME = "DSA";
-        private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(512, 1024, 64) };
-        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
+        private const GOST3410CryptoPro DEFAULT_CRYPTO_PRO = GOST3410CryptoPro.GostR3410x94CryptoProA;
+        private const string NAME = "GOST3410";
+        private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(512, 1024, 512) };
+        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.GOST3411;
         private bool _initialized = false;
-        private int _keySize = DEFAULT_KEY_SIZE;
         private AsymmetricKeyParameter _privateKey = null;
         private AsymmetricKeyParameter _publicKey = null;
-        private DSASignatureEncodingMode _signatureEncoding = DSASignatureEncodingMode.Standard;
         private ISigner _signer = null;
         private ISigner _verifier = null;
-
         /// <inheritdoc/>
         public HashAlgorithmName HashAlgorithm
         {
@@ -53,44 +49,17 @@ namespace Honoo.BouncyCastle
             }
         }
 
-        /// <summary>
-        /// Gets key size bits.
-        /// </summary>
-        public int KeySize => _keySize;
-
-        /// <summary>
-        /// Gets legal key size bits. Legal key size 512-1024 bits (64 bits increments).
-        /// </summary>
-        public KeySizes[] LegalKeySizes => (KeySizes[])LEGAL_KEY_SIZES.Clone();
-
         /// <inheritdoc/>
-        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm, _signatureEncoding);
-
-        /// <summary>
-        /// Represents the signature encoding mode used in the symmetric algorithm.
-        /// </summary>
-        public DSASignatureEncodingMode SignatureEncoding
-        {
-            get => _signatureEncoding;
-            set
-            {
-                if (value != _signatureEncoding)
-                {
-                    _signer = null;
-                    _verifier = null;
-                    _signatureEncoding = value;
-                }
-            }
-        }
+        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm);
 
         #endregion Properties
 
         #region Construction
 
         /// <summary>
-        /// Initializes a new instance of the DSA class.
+        /// Initializes a new instance of the GOST3410 class.
         /// </summary>
-        public DSA() : base(NAME, AsymmetricAlgorithmKind.Signature)
+        public GOST3410() : base(NAME, AsymmetricAlgorithmKind.Signature)
         {
         }
 
@@ -100,9 +69,9 @@ namespace Honoo.BouncyCastle
         /// Creates an instance of the algorithm.
         /// </summary>
         /// <returns></returns>
-        public static DSA Create()
+        public static GOST3410 Create()
         {
-            return new DSA();
+            return new GOST3410();
         }
 
         #region GenerateParameters
@@ -110,34 +79,22 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         public void GenerateParameters()
         {
-            GenerateParameters(DEFAULT_KEY_SIZE, DEFAULT_CERTAINTY);
+            GenerateParameters(DEFAULT_CRYPTO_PRO);
         }
 
         /// <summary>
         /// Renew private key and public key of the algorithm.
         /// </summary>
-        /// <param name="keySize">Legal key size 512-1024 bits (64 bits increments).</param>
-        /// <param name="certainty">Legal certainty is more than 0.</param>
-        public void GenerateParameters(int keySize = DEFAULT_KEY_SIZE, int certainty = DEFAULT_CERTAINTY)
+        /// <param name="cryptoPro">Elliptic curve to be uesd.</param>
+        public void GenerateParameters(GOST3410CryptoPro cryptoPro = DEFAULT_CRYPTO_PRO)
         {
-            if (!ValidKeySize(keySize, out string exception))
-            {
-                throw new CryptographicException(exception);
-            }
-            if (certainty <= 0)
-            {
-                throw new CryptographicException("Legal certainty is more than 0.");
-            }
-            DsaParametersGenerator parametersGenerator = new DsaParametersGenerator();
-            parametersGenerator.Init(keySize, certainty, Common.SecureRandom);
-            DsaParameters parameters = parametersGenerator.GenerateParameters();
-            DsaKeyGenerationParameters generationParameters = new DsaKeyGenerationParameters(Common.SecureRandom, parameters);
-            DsaKeyPairGenerator keyPairGenerator = new DsaKeyPairGenerator();
+            Gost3410KeyGenerationParameters generationParameters =
+                new Gost3410KeyGenerationParameters(Common.SecureRandom, GetCryptoPro(cryptoPro));
+            Gost3410KeyPairGenerator keyPairGenerator = new Gost3410KeyPairGenerator();
             keyPairGenerator.Init(generationParameters);
             AsymmetricCipherKeyPair keyPair = keyPairGenerator.GenerateKeyPair();
             _privateKey = keyPair.Private;
             _publicKey = keyPair.Public;
-            _keySize = keySize;
             _signer = null;
             _verifier = null;
             _initialized = true;
@@ -202,22 +159,22 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         public void ImportKeyInfo(byte[] keyInfo)
         {
-            DsaPrivateKeyParameters privateKey = null;
-            DsaPublicKeyParameters publicKey = null;
+            Gost3410PrivateKeyParameters privateKey = null;
+            Gost3410PublicKeyParameters publicKey = null;
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             try
             {
                 PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
-                privateKey = (DsaPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
-                BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
-                publicKey = new DsaPublicKeyParameters(y, privateKey.Parameters);
+                privateKey = (Gost3410PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
+                publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
             }
             catch
             {
                 try
                 {
                     SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
-                    publicKey = (DsaPublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                    publicKey = (Gost3410PublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
                 }
                 catch
                 {
@@ -225,7 +182,6 @@ namespace Honoo.BouncyCastle
             }
             _privateKey = privateKey;
             _publicKey = publicKey;
-            _keySize = publicKey.Parameters.P.BitLength;
             _signer = null;
             _verifier = null;
             _initialized = true;
@@ -237,38 +193,11 @@ namespace Honoo.BouncyCastle
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
             PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
-            DsaPrivateKeyParameters privateKey = (DsaPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
-            BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
-            DsaPublicKeyParameters publicKey = new DsaPublicKeyParameters(y, privateKey.Parameters);
+            Gost3410PrivateKeyParameters privateKey = (Gost3410PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
+            Gost3410PublicKeyParameters publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
             _privateKey = privateKey;
             _publicKey = publicKey;
-            _keySize = publicKey.Parameters.P.BitLength;
-            _signer = null;
-            _verifier = null;
-            _initialized = true;
-        }
-
-        /// <summary>
-        /// Imports a <see cref="DSAParameters"/> that represents asymmetric algorithm key information.
-        /// </summary>
-        /// <param name="parameters">A <see cref="DSAParameters"/> that represents an asymmetric algorithm key.</param>
-        public void ImportParameters(DSAParameters parameters)
-        {
-            DsaPrivateKeyParameters privateKey = null;
-            DsaPublicKeyParameters publicKey;
-            if (parameters.X == null)
-            {
-                publicKey = DotNetUtilities.GetDsaPublicKey(parameters);
-            }
-            else
-            {
-                AsymmetricCipherKeyPair keyPair = DotNetUtilities.GetDsaKeyPair(parameters);
-                privateKey = (DsaPrivateKeyParameters)keyPair.Private;
-                publicKey = (DsaPublicKeyParameters)keyPair.Public;
-            }
-            _privateKey = privateKey;
-            _publicKey = publicKey;
-            _keySize = publicKey.Parameters.P.BitLength;
             _signer = null;
             _verifier = null;
             _initialized = true;
@@ -279,22 +208,21 @@ namespace Honoo.BouncyCastle
         {
             using (StringReader reader = new StringReader(pem))
             {
-                DsaPrivateKeyParameters privateKey = null;
-                DsaPublicKeyParameters publicKey;
+                Gost3410PrivateKeyParameters privateKey = null;
+                Gost3410PublicKeyParameters publicKey;
                 object obj = new PemReader(reader).ReadObject();
-                if (obj.GetType() == typeof(AsymmetricCipherKeyPair))
+                if (obj.GetType() == typeof(Gost3410PrivateKeyParameters))
                 {
-                    AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair)obj;
-                    privateKey = (DsaPrivateKeyParameters)keyPair.Private;
-                    publicKey = (DsaPublicKeyParameters)keyPair.Public;
+                    privateKey = (Gost3410PrivateKeyParameters)obj;
+                    BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
+                    publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
                 }
                 else
                 {
-                    publicKey = (DsaPublicKeyParameters)obj;
+                    publicKey = (Gost3410PublicKeyParameters)obj;
                 }
                 _privateKey = privateKey;
                 _publicKey = publicKey;
-                _keySize = publicKey.Parameters.P.BitLength;
                 _signer = null;
                 _verifier = null;
                 _initialized = true;
@@ -307,61 +235,15 @@ namespace Honoo.BouncyCastle
             using (StringReader reader = new StringReader(pem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
-                AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair)obj;
-                DsaPrivateKeyParameters privateKey = (DsaPrivateKeyParameters)keyPair.Private;
-                DsaPublicKeyParameters publicKey = (DsaPublicKeyParameters)keyPair.Public;
+                Gost3410PrivateKeyParameters privateKey = (Gost3410PrivateKeyParameters)obj;
+                BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
+                Gost3410PublicKeyParameters publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
                 _privateKey = privateKey;
                 _publicKey = publicKey;
-                _keySize = publicKey.Parameters.P.BitLength;
                 _signer = null;
                 _verifier = null;
                 _initialized = true;
             }
-        }
-
-        /// <summary>
-        /// Imports a xml string that represents asymmetric algorithm key information.
-        /// </summary>
-        /// <param name="xmlString">A xml string that represents an key asymmetric algorithm key.</param>
-        public void ImportXml(string xmlString)
-        {
-            DsaPrivateKeyParameters privateKey = null;
-            DsaPublicKeyParameters publicKey;
-            StringReader reader = new StringReader(xmlString);
-            XElement root = XElement.Load(reader, LoadOptions.None);
-            BigInteger p = new BigInteger(1, Convert.FromBase64String(root.Element("P").Value));
-            BigInteger q = new BigInteger(1, Convert.FromBase64String(root.Element("Q").Value));
-            BigInteger g = new BigInteger(1, Convert.FromBase64String(root.Element("G").Value));
-            BigInteger y = new BigInteger(1, Convert.FromBase64String(root.Element("Y").Value));
-            DsaValidationParameters validationParameters = null;
-            if (root.Element("Seed") != null)
-            {
-                byte[] seed = Convert.FromBase64String(root.Element("Seed").Value);
-                byte[] c = Convert.FromBase64String(root.Element("PgenCounter").Value);
-                int counter = c[c.Length - 1];
-                if (c.Length > 1) counter |= (c[c.Length - 1 - 1] & 0xFF) << 8;
-                if (c.Length > 2) counter |= (c[c.Length - 1 - 2] & 0xFF) << 16;
-                if (c.Length > 3) counter |= (c[c.Length - 1 - 3] & 0xFF) << 24;
-                validationParameters = new DsaValidationParameters(seed, counter);
-            }
-            DsaParameters parameters = new DsaParameters(p, q, g, validationParameters);
-            XElement element = root.Element("X");
-            if (element != null)
-            {
-                BigInteger x = new BigInteger(1, Convert.FromBase64String(element.Value));
-                privateKey = new DsaPrivateKeyParameters(x, parameters);
-                publicKey = new DsaPublicKeyParameters(y, parameters);
-            }
-            else
-            {
-                publicKey = new DsaPublicKeyParameters(y, parameters);
-            }
-            _privateKey = privateKey;
-            _publicKey = publicKey;
-            _keySize = publicKey.Parameters.P.BitLength;
-            _signer = null;
-            _verifier = null;
-            _initialized = true;
         }
 
         #endregion Export/Import Parameters
@@ -430,7 +312,7 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Determines whether the specified size is valid for the current algorithm.
         /// </summary>
-        /// <param name="keySize">Legal key size 512-1024 bits (64 bits increments).</param>
+        /// <param name="keySize">Legal key size is more than or equal to 24 bits (8 bits increments).</param>
         /// <returns></returns>
         public bool ValidKeySize(int keySize, out string exception)
         {
@@ -441,7 +323,7 @@ namespace Honoo.BouncyCastle
             }
             else
             {
-                exception = "Legal key size 512-1024 bits (64 bits increments).";
+                exception = "Legal key size 512, 1024 bits.";
                 return false;
             }
         }
@@ -478,24 +360,28 @@ namespace Honoo.BouncyCastle
 
         internal static AsymmetricAlgorithmName GetAlgorithmName()
         {
-            return new AsymmetricAlgorithmName(NAME, AsymmetricAlgorithmKind.Signature, () => { return new DSA(); });
+            return new AsymmetricAlgorithmName(NAME, AsymmetricAlgorithmKind.Signature, () => { return new GOST3410(); });
         }
 
-        internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm, DSASignatureEncodingMode signatureEncoding)
+        internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm)
         {
-            return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm, signatureEncoding),
-                                              () => { return new DSA() { HashAlgorithm = hashAlgorithm, SignatureEncoding = signatureEncoding }; });
+            return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm),
+                                              () => { return new GOST3410() { HashAlgorithm = hashAlgorithm }; });
         }
 
-        private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm, DSASignatureEncodingMode signatureEncoding)
+        private static DerObjectIdentifier GetCryptoPro(GOST3410CryptoPro cryptoPro)
         {
-            //string suffix;
-            switch (signatureEncoding)
+            switch (cryptoPro)
             {
-                case DSASignatureEncodingMode.Standard: break;
-                case DSASignatureEncodingMode.Plain: break;
-                default: throw new CryptographicException("Unsupported signature padding mode.");
+                case GOST3410CryptoPro.GostR3410x94CryptoProA: return CryptoProObjectIdentifiers.GostR3410x94CryptoProA;
+                case GOST3410CryptoPro.GostR3410x94CryptoProB: return CryptoProObjectIdentifiers.GostR3410x94CryptoProB;
+                case GOST3410CryptoPro.GostR3410x94CryptoProXchA: return CryptoProObjectIdentifiers.GostR3410x94CryptoProXchA;
+                default: throw new CryptographicException("Unsupported crypto pro.");
             }
+        }
+
+        private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm)
+        {
             return $"{hashAlgorithm.Name}with{NAME}";
         }
 
@@ -514,12 +400,7 @@ namespace Honoo.BouncyCastle
                 if (_signer == null)
                 {
                     IDigest digest = _hashAlgorithm.GetDigest();
-                    switch (_signatureEncoding)
-                    {
-                        case DSASignatureEncodingMode.Standard: _signer = new DsaDigestSigner(new DsaSigner(), digest, StandardDsaEncoding.Instance); break;
-                        case DSASignatureEncodingMode.Plain: _signer = new DsaDigestSigner(new DsaSigner(), digest, PlainDsaEncoding.Instance); break;
-                        default: throw new CryptographicException("Unsupported signature encoding mode.");
-                    }
+                    _signer = new Gost3410DigestSigner(new Gost3410Signer(), digest);
                     _signer.Init(true, _privateKey);
                 }
             }
@@ -528,12 +409,7 @@ namespace Honoo.BouncyCastle
                 if (_verifier == null)
                 {
                     IDigest digest = _hashAlgorithm.GetDigest();
-                    switch (_signatureEncoding)
-                    {
-                        case DSASignatureEncodingMode.Standard: _verifier = new DsaDigestSigner(new DsaSigner(), digest, StandardDsaEncoding.Instance); break;
-                        case DSASignatureEncodingMode.Plain: _verifier = new DsaDigestSigner(new DsaSigner(), digest, PlainDsaEncoding.Instance); break;
-                        default: throw new CryptographicException("Unsupported signature encoding mode.");
-                    }
+                    _verifier = new Gost3410DigestSigner(new Gost3410Signer(), digest);
                     _verifier.Init(false, _publicKey);
                 }
             }

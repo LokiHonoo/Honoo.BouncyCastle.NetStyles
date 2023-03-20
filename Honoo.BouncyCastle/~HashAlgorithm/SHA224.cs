@@ -8,12 +8,18 @@ namespace Honoo.BouncyCastle
     /// </summary>
     public sealed class SHA224 : HashAlgorithm
     {
+        #region Properties
+
+        private const int HASH_SIZE = 224;
+        private const string NAME = "SHA224";
+
+        #endregion Properties
         #region Construction
 
         /// <summary>
         /// Initializes a new instance of the SHA224 class.
         /// </summary>
-        public SHA224() : base("SHA224", 224)
+        public SHA224() : base(NAME, HASH_SIZE)
         {
         }
 
@@ -30,7 +36,7 @@ namespace Honoo.BouncyCastle
 
         internal static HashAlgorithmName GetAlgorithmName()
         {
-            return new HashAlgorithmName("SHA224", 224, () => { return new Sha224Digest(); }, () => { return new SHA224(); });
+            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new Sha224Digest(); }, () => { return new SHA224(); });
         }
         /// <inheritdoc/>
         protected override IDigest GetDigest()

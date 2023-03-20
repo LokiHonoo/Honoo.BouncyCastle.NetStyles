@@ -8,12 +8,18 @@ namespace Honoo.BouncyCastle
     /// </summary>
     public sealed class SHA256 : HashAlgorithm
     {
+        #region Properties
+
+        private const int HASH_SIZE = 256;
+        private const string NAME = "SHA256";
+
+        #endregion Properties
         #region Construction
 
         /// <summary>
         /// Initializes a new instance of the SHA256 class.
         /// </summary>
-        public SHA256() : base("SHA256", 256)
+        public SHA256() : base(NAME, HASH_SIZE)
         {
         }
 
@@ -28,7 +34,7 @@ namespace Honoo.BouncyCastle
         }
         internal static HashAlgorithmName GetAlgorithmName()
         {
-            return new HashAlgorithmName("SHA256", 256, () => { return new Sha256Digest(); }, () => { return new SHA256(); });
+            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new Sha256Digest(); }, () => { return new SHA256(); });
         }
         /// <inheritdoc/>
         protected override IDigest GetDigest()

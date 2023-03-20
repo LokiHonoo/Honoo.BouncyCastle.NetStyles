@@ -31,14 +31,29 @@ namespace Honoo.BouncyCastle
         public static AsymmetricAlgorithmName ECDSA { get; } = Honoo.BouncyCastle.ECDSA.GetAlgorithmName();
 
         /// <summary>
+        /// Asymmetric signature algorithm.
+        /// </summary>
+        public static AsymmetricAlgorithmName ECGOST3410 { get; } = Honoo.BouncyCastle.ECGOST3410.GetAlgorithmName();
+
+        /// <summary>
         /// Asymmetric signature and encryption algorithm. Legal key size is more than or equal to 8 bits (8 bits increments).
         /// </summary>
         public static AsymmetricAlgorithmName ElGamal { get; } = Honoo.BouncyCastle.ElGamal.GetAlgorithmName();
 
         /// <summary>
+        /// Asymmetric signature algorithm.
+        /// </summary>
+        public static AsymmetricAlgorithmName GOST3410 { get; } = Honoo.BouncyCastle.GOST3410.GetAlgorithmName();
+
+        /// <summary>
         /// Asymmetric signature and encryption algorithm. Legal key size is more than or equal to 24 bits (8 bits increments).
         /// </summary>
         public static AsymmetricAlgorithmName RSA { get; } = Honoo.BouncyCastle.RSA.GetAlgorithmName();
+
+        /// <summary>
+        /// Asymmetric signature algorithm.
+        /// </summary>
+        public static AsymmetricAlgorithmName SM2 { get; } = Honoo.BouncyCastle.SM2.GetAlgorithmName();
 
         #endregion AlgorithmNames
 
@@ -84,14 +99,14 @@ namespace Honoo.BouncyCastle
                 DSA,
                 ECDH,
                 ECDSA,
-                //  ECGOST3410,
+                ECGOST3410,
                 //  Ed25519,
                 //  Ed448,
                 ElGamal,
-                //  GOST3410,
+                GOST3410,
                 RSA,
-                //  SM2,
-        };
+                SM2,
+            };
         }
 
         /// <summary>
@@ -111,15 +126,15 @@ namespace Honoo.BouncyCastle
             switch (mechanism)
             {
                 case "1.2.840.10040.4.1": case "DSA": algorithmName = DSA; return true;
-                //   case "0.4.0.127.0.7.2.2.3.2": case "ECDH": algorithmName = ECDH; return true;
-                //   case "0.4.0.127.0.7.2.2.2.2": case "ECDSA": algorithmName = ECDSA; return true;
-                //   case "1.2.643.2.2.19": case "ECGOST3410": case "ECGOST3410-2001": algorithmName = ECGOST3410; return true;
+                case "0.4.0.127.0.7.2.2.3.2": case "ECDH": algorithmName = ECDH; return true;
+                case "0.4.0.127.0.7.2.2.2.2": case "ECDSA": algorithmName = ECDSA; return true;
+                case "1.2.643.2.2.19": case "ECGOST3410": case "ECGOST3410-2001": algorithmName = ECGOST3410; return true;
                 //  case "1.3.101.112": case "ED25519": algorithmName = Ed25519; return true;
                 //  case "1.3.101.113": case "ED448": algorithmName = Ed448; return true;
                 case "1.3.14.7.2.1.1": case "ELGAMAL": algorithmName = ElGamal; return true;
-                //  case "1.2.643.2.2.20": case "GOST3410": case "GOST3410-94": algorithm = GOST3410; return true;
+                case "1.2.643.2.2.20": case "GOST3410": case "GOST3410-94": algorithmName = GOST3410; return true;
                 case "1.2.840.113549.1.1.1": case "RSA": algorithmName = RSA; return true;
-                //  case "1.2.156.10197.1.301.1": case "SM2": algorithmName = SM2; return true;
+                case "1.2.156.10197.1.301.1": case "SM2": algorithmName = SM2; return true;
                 default: algorithmName = null; return false;
             }
         }

@@ -35,12 +35,10 @@ namespace Test
 
         private static void Demo()
         {
-            RSA rsa1 = new RSA { Padding = AsymmetricPaddingMode.ISO9796_1 };
-            rsa1.GenerateParameters(1280);
-            string pem = rsa1.ExportPem(false);
+            RSA rsa1 = new RSA();
+            string pem = rsa1.ExportPem(false); 
 
             RSA rsa2 = (RSA)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.RSA);
-            rsa2.Padding = AsymmetricPaddingMode.ISO9796_1;
             rsa2.ImportPem(pem);
 
             byte[] enc = rsa2.Encrypt(_input);
@@ -62,6 +60,12 @@ namespace Test
             alg2.ImportPem(pem1, "12345");
             alg2.ImportPem(pem2);
             alg2.ImportPem(pem3);
+            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand128BitRC2CBC, "12345");
+            byte[] info2 = alg1.ExportKeyInfo(true);
+            byte[] info3 = alg1.ExportKeyInfo(false);
+            alg2.ImportKeyInfo(info1, "12345");
+            alg2.ImportKeyInfo(info2);
+            alg2.ImportKeyInfo(info3);
             string xml1 = net.ToXmlString(true);
             string xml2 = net.ToXmlString(false);
             alg1.ImportXml(xml1);
@@ -78,6 +82,12 @@ namespace Test
             alg2.ImportPem(pem1, "12345");
             alg2.ImportPem(pem2);
             alg2.ImportPem(pem3);
+            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
+            byte[] info2 = alg1.ExportKeyInfo(true);
+            byte[] info3 = alg1.ExportKeyInfo(false);
+            alg2.ImportKeyInfo(info1, "12345");
+            alg2.ImportKeyInfo(info2);
+            alg2.ImportKeyInfo(info3);
         }
 
         private static void DoElGamal()
@@ -90,20 +100,26 @@ namespace Test
             alg2.ImportPem(pem1, "12345");
             alg2.ImportPem(pem2);
             alg2.ImportPem(pem3);
-            var paddings = (AsymmetricPaddingMode[])Enum.GetValues(typeof(AsymmetricPaddingMode));
+            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
+            byte[] info2 = alg1.ExportKeyInfo(true);
+            byte[] info3 = alg1.ExportKeyInfo(false);
+            alg2.ImportKeyInfo(info1, "12345");
+            alg2.ImportKeyInfo(info2);
+            alg2.ImportKeyInfo(info3);
+            var paddings = (AsymmetricEncryptionPaddingMode[])Enum.GetValues(typeof(AsymmetricEncryptionPaddingMode));
             foreach (var padding in paddings)
             {
-                if (padding == AsymmetricPaddingMode.ISO9796_1)
+                if (padding == AsymmetricEncryptionPaddingMode.ISO9796_1)
                 {
                     continue;
                 }
                 _total++;
+                alg1.Padding = padding;
+                alg2.Padding = padding;
                 StringBuilder title = new StringBuilder();
                 title.Append($"{alg1.Name}-{alg1.KeySize}/{padding}".PadRight(24));
                 title.Append($"{alg2.EncryptInputLength}/{alg2.EncryptOutputLength}/{alg2.DecryptInputLength}/{alg2.DecryptOutputLength}".PadRight(16));
                 title.Append($"{alg1.EncryptInputLength}/{alg1.EncryptOutputLength}/{alg1.DecryptInputLength}/{alg1.DecryptOutputLength}");
-                alg1.Padding = padding;
-                alg2.Padding = padding;
                 alg2.Encrypt(_input);
                 byte[] enc = alg2.Encrypt(_input);
                 alg1.Decrypt(enc);
@@ -127,6 +143,12 @@ namespace Test
             alg2.ImportPem(pem1, "12345");
             alg2.ImportPem(pem2);
             alg2.ImportPem(pem3);
+            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand40BitRC4, "12345");
+            byte[] info2 = alg1.ExportKeyInfo(true);
+            byte[] info3 = alg1.ExportKeyInfo(false);
+            alg2.ImportKeyInfo(info1, "12345");
+            alg2.ImportKeyInfo(info2);
+            alg2.ImportKeyInfo(info3);
             string xml1 = alg1.ExportXml(true);
             string xml2 = alg1.ExportXml(false);
             alg2.ImportXml(xml1);
@@ -137,22 +159,22 @@ namespace Test
             alg2.ImportXml(xml4);
             {
                 _total++;
-                alg2.Padding = AsymmetricPaddingMode.OAEP;
+                alg2.Padding = AsymmetricEncryptionPaddingMode.OAEP;
                 alg2.Encrypt(_input);
                 byte[] enc = alg2.Encrypt(_input);
                 byte[] dec = net.Decrypt(enc, true);
                 WriteResult($"{alg1.Name}-{alg1.KeySize}/{alg1.Padding} BC <--> NET", _input, enc, dec);
             }
-            var paddings = (AsymmetricPaddingMode[])Enum.GetValues(typeof(AsymmetricPaddingMode));
+            var paddings = (AsymmetricEncryptionPaddingMode[])Enum.GetValues(typeof(AsymmetricEncryptionPaddingMode));
             foreach (var padding in paddings)
             {
                 _total++;
+                alg1.Padding = padding;
+                alg2.Padding = padding;
                 StringBuilder title = new StringBuilder();
                 title.Append($"{alg1.Name}-{alg1.KeySize}/{padding}".PadRight(24));
                 title.Append($"{alg2.EncryptInputLength}/{alg2.EncryptOutputLength}/{alg2.DecryptInputLength}/{alg2.DecryptOutputLength}".PadRight(16));
                 title.Append($"{alg1.EncryptInputLength}/{alg1.EncryptOutputLength}/{alg1.DecryptInputLength}/{alg1.DecryptOutputLength}");
-                alg1.Padding = padding;
-                alg2.Padding = padding;
                 alg2.Encrypt(_input);
                 byte[] enc = alg2.Encrypt(_input);
                 alg1.Decrypt(enc);
@@ -170,7 +192,7 @@ namespace Test
             }
             else
             {
-                Console.WriteLine($"{message} diff <--");
+                Console.WriteLine($"{message} diff");
                 Console.WriteLine($"  org   {BitConverter.ToString(input).Replace('-', char.MinValue)}");
                 Console.WriteLine($"  enc   {BitConverter.ToString(enc).Replace('-', char.MinValue)}");
                 Console.WriteLine($"  dec   {BitConverter.ToString(dec).Replace('-', char.MinValue)}");

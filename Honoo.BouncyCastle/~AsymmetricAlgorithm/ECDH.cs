@@ -7,6 +7,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.X509;
+using System;
 using System.Security.Cryptography;
 
 namespace Honoo.BouncyCastle
@@ -20,6 +21,7 @@ namespace Honoo.BouncyCastle
 
         private const int DEFAULT_CERTAINTY = 20;
         private const int DEFAULT_KEY_SIZE = 521;
+        private const string NAME = "ECDH";
 
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[]
         {
@@ -29,8 +31,8 @@ namespace Honoo.BouncyCastle
             new KeySizes(521, 521, 0)
         };
 
-        // private AsymmetricKeyParameter _privateKey = null;
-        // private AsymmetricKeyParameter _publicKey = null;
+        //private AsymmetricKeyParameter _privateKey = null;
+        //private AsymmetricKeyParameter _publicKey = null;
 
         private ECDHBasicAgreement _agreementA = null;
         private ECDHBasicAgreement _agreementB = null;
@@ -38,6 +40,7 @@ namespace Honoo.BouncyCastle
         private bool _initialized = false;
         private byte[] _p = null;
         private BigInteger _pmsB = null;
+
         private byte[] _publicKeyA = null;
         private byte[] _publicKeyB = null;
 
@@ -45,7 +48,7 @@ namespace Honoo.BouncyCastle
         {
             get
             {
-                InspectKey();
+                InspectParameters();
                 return (byte[])_g.Clone();
             }
         }
@@ -54,7 +57,7 @@ namespace Honoo.BouncyCastle
         {
             get
             {
-                InspectKey();
+                InspectParameters();
                 return (byte[])_p.Clone();
             }
         }
@@ -63,7 +66,7 @@ namespace Honoo.BouncyCastle
         {
             get
             {
-                InspectKey();
+                InspectParameters();
                 return (byte[])_publicKeyA.Clone();
             }
         }
@@ -77,7 +80,7 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Initializes a new instance of the ECDH class.
         /// </summary>
-        public ECDH() : base("ECDH", AsymmetricAlgorithmKind.KeyExchange)
+        public ECDH() : base(NAME, AsymmetricAlgorithmKind.KeyExchange)
         {
         }
 
@@ -102,6 +105,18 @@ namespace Honoo.BouncyCastle
             AsymmetricKeyParameter publicKeyBob = PublicKeyFactory.CreateKey(publicKeyB);
             BigInteger pmsA = _agreementA.CalculateAgreement(publicKeyBob);
             return unsigned ? pmsA.ToByteArrayUnsigned() : pmsA.ToByteArray();
+        }
+
+        /// <inheritdoc/>
+        public string ExportPem(bool includePrivate)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
+        {
+            throw new NotImplementedException();
         }
 
         void IKeyExchangeA.GenerateParameters()
@@ -136,27 +151,40 @@ namespace Honoo.BouncyCastle
             _initialized = true;
         }
 
-        /// <summary>
-        /// Gets party A's interface.
-        /// </summary>
-        /// <returns></returns>
-        public IKeyExchangeA GetPartyAInterface()
+        /// <inheritdoc/>
+        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
         {
-            return this;
+            throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Gets party B's interface.
-        /// </summary>
-        /// <returns></returns>
-        public IKeyExchangeB GetPartyBInterface()
+        /// <inheritdoc/>
+        public override IKeyExchangeA GetKeyExchangeAInterface()
         {
             return this;
         }
 
         /// <inheritdoc/>
-        public override void Reset()
+        public override IKeyExchangeB GetKeyExchangeBInterface()
         {
+            return this;
+        }
+
+        /// <inheritdoc/>
+        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public void ImportPem(string pem)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public void ImportPem(string pem, string password)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -180,7 +208,7 @@ namespace Honoo.BouncyCastle
 
         internal static AsymmetricAlgorithmName GetAlgorithmName()
         {
-            return new AsymmetricAlgorithmName("ECDH", AsymmetricAlgorithmKind.KeyExchange, () => { return new ECDH(); });
+            return new AsymmetricAlgorithmName(NAME, AsymmetricAlgorithmKind.KeyExchange, () => { return new ECDH(); });
         }
 
         private void GenerateParameters(int keySize, int certainty)
@@ -214,7 +242,7 @@ namespace Honoo.BouncyCastle
             _initialized = true;
         }
 
-        private void InspectKey()
+        private void InspectParameters()
         {
             if (!_initialized)
             {

@@ -8,12 +8,18 @@ namespace Honoo.BouncyCastle
     /// </summary>
     public sealed class SHA384 : HashAlgorithm
     {
+        #region Properties
+
+        private const int HASH_SIZE = 384;
+        private const string NAME = "SHA384";
+
+        #endregion Properties
         #region Construction
 
         /// <summary>
         /// Initializes a new instance of the SHA384 class.
         /// </summary>
-        public SHA384() : base("SHA384", 384)
+        public SHA384() : base(NAME, HASH_SIZE)
         {
         }
 
@@ -28,7 +34,7 @@ namespace Honoo.BouncyCastle
         }
         internal static HashAlgorithmName GetAlgorithmName()
         {
-            return new HashAlgorithmName("SHA384", 384, () => { return new Sha384Digest(); }, () => { return new SHA384(); });
+            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new Sha384Digest(); }, () => { return new SHA384(); });
         }
         /// <inheritdoc/>
         protected override IDigest GetDigest()

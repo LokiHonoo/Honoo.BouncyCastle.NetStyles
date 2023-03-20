@@ -8,26 +8,26 @@ namespace Honoo.BouncyCastle
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class SHA512T : HashAlgorithm
+    public sealed class SHA3 : HashAlgorithm
     {
         #region Properties
 
-        private const string NAME = "SHA512/";
-        private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(224, 376, 8), new KeySizes(392, 504, 8) };
+        private const string NAME = "SHA3-";
+        private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(224, 224, 0), new KeySizes(256, 512, 128) };
 
         #endregion Properties
 
         #region Construction
 
         /// <summary>
-        /// Initializes a new instance of the SHA512T class.
+        /// Initializes a new instance of the SHA3 class.
         /// </summary>
-        /// <param name="hashSize">Legal hash size 224-376 bits (8 bits increments), 392-504 bits (8 bits increments).</param>
-        public SHA512T(int hashSize) : base($"{NAME}{hashSize}", hashSize)
+        /// <param name="hashSize">Legal hash size 224, 256, 384, 512 bits.</param>
+        public SHA3(int hashSize) : base($"{NAME}{hashSize}", hashSize)
         {
             if (!DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
             {
-                throw new CryptographicException("Legal hash size 224-376 bits (8 bits increments), 392-504 bits (8 bits increments).");
+                throw new CryptographicException("Legal hash size 224, 256, 384, 512 bits.");
             }
         }
 
@@ -36,19 +36,19 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Creates an instance of the algorithm.
         /// </summary>
-        /// <param name="hashSize">Legal hash size 224-376 bits (8 bits increments), 392-504 bits (8 bits increments).</param>
+        /// <param name="hashSize">Legal hash size 224, 256, 384, 512 bits.</param>
         /// <returns></returns>
-        public static SHA512T Create(int hashSize)
+        public static SHA3 Create(int hashSize)
         {
-            return new SHA512T(hashSize);
+            return new SHA3(hashSize);
         }
 
         internal static HashAlgorithmName GetAlgorithmName(int hashSize)
         {
             return new HashAlgorithmName($"{NAME}{hashSize}",
                                          hashSize,
-                                         () => { return new Sha512tDigest(hashSize); },
-                                         () => { return new SHA512T(hashSize); });
+                                         () => { return new Sha3Digest(hashSize); },
+                                         () => { return new SHA3(hashSize); });
         }
 
         internal static bool ValidHashSize(int hashSize)
@@ -59,7 +59,7 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         protected override IDigest GetDigest()
         {
-            return new Sha512tDigest(_hashSize);
+            return new Sha3Digest(_hashSize);
         }
     }
 }

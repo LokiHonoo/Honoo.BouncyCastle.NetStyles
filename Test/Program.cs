@@ -39,6 +39,7 @@ namespace Test
                         case '2': Console.Clear(); Symmetric.Test(); break;
                         case '3': Console.Clear(); Asymmetric.Test(); break;
                         case '4': Console.Clear(); Signature.Test(); break;
+                        case '5': Console.Clear(); X509.Test(); break;
                         case '6': Console.Clear(); KeyExchange.Test(); break;
                         case '7': Console.Clear(); HashSpeed.Test(); break;
                         case '8': Console.Clear(); SymmetricSpeed.Test(); break;

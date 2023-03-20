@@ -1,11 +1,11 @@
-﻿using Org.BouncyCastle.Crypto;
+﻿using System;
 
 namespace Honoo.BouncyCastle
 {
     /// <summary>
     /// Represents the abstract base class from which all implementations of asymmetric algorithms must inherit.
     /// </summary>
-    public abstract class AsymmetricAlgorithm
+    public abstract class AsymmetricAlgorithm : IAsymmetricAlgorithm
     {
         #region Properties
 
@@ -38,10 +38,7 @@ namespace Honoo.BouncyCastle
         }
 
         #endregion Construction
-        /// <summary>
-        /// Reset calculator of the algorithm.
-        /// </summary>
-        public abstract void Reset();
+
         /// <summary>
         /// Creates an instance of the algorithm by algorithm name.
         /// </summary>
@@ -52,6 +49,42 @@ namespace Honoo.BouncyCastle
             return algorithmName.GetAlgorithm();
         }
 
+        /// <summary>
+        /// Creates an instance of the algorithm by algorithm name.
+        /// </summary>
+        /// <param name="algorithmName">Signature algorithm name.</param>
+        /// <returns></returns>
+        public static AsymmetricAlgorithm Create(SignatureAlgorithmName algorithmName)
+        {
+            return algorithmName.GetAlgorithm();
+        }
 
+        /// <summary>
+        /// Gets encryption algorithm interface.
+        /// Throw <see cref="NotImplementedException"/> if this algorithm is not a encryption algorithm.
+        /// </summary>
+        /// <returns></returns>
+        public abstract IAsymmetricEncryptionAlgorithm GetEncryptionInterface();
+
+        /// <summary>
+        /// Gets key exchange algorithm party A's interface.
+        /// Throw <see cref="NotImplementedException"/> if this algorithm is not a key exchange algorithm.
+        /// </summary>
+        /// <returns></returns>
+        public abstract IKeyExchangeA GetKeyExchangeAInterface();
+
+        /// <summary>
+        /// Gets key exchange algorithm party B's interface.
+        /// Throw <see cref="NotImplementedException"/> if this algorithm is not a key exchange algorithm.
+        /// </summary>
+        /// <returns></returns>
+        public abstract IKeyExchangeB GetKeyExchangeBInterface();
+
+        /// <summary>
+        /// Gets signature algorithm interface.
+        /// Throw <see cref="NotImplementedException"/> if this algorithm is not a signature algorithm.
+        /// </summary>
+        /// <returns></returns>
+        public abstract IAsymmetricSignatureAlgorithm GetSignatureInterface();
     }
 }

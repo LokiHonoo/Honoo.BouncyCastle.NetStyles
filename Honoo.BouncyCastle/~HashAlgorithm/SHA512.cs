@@ -8,12 +8,18 @@ namespace Honoo.BouncyCastle
     /// </summary>
     public sealed class SHA512 : HashAlgorithm
     {
+        #region Properties
+
+        private const int HASH_SIZE = 512;
+        private const string NAME = "SHA512";
+
+        #endregion Properties
         #region Construction
 
         /// <summary>
         /// Initializes a new instance of the SHA512 class.
         /// </summary>
-        public SHA512() : base("SHA512", 512)
+        public SHA512() : base(NAME, HASH_SIZE)
         {
         }
 
@@ -30,7 +36,7 @@ namespace Honoo.BouncyCastle
 
         internal static HashAlgorithmName GetAlgorithmName()
         {
-            return new HashAlgorithmName("SHA512", 512, () => { return new Sha512Digest(); }, () => { return new SHA512(); });
+            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new Sha512Digest(); }, () => { return new SHA512(); });
         }
         /// <inheritdoc/>
         protected override IDigest GetDigest()

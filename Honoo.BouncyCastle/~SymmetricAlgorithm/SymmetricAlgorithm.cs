@@ -57,7 +57,7 @@ namespace Honoo.BouncyCastle
         public abstract KeySizes[] LegalKeySizes { get; }
 
         /// <summary>
-        /// Gets or sets the mode for operation of the symmetric algorithm. Valid for block algorithm only.
+        /// Gets or sets the mode for operation of the symmetric algorithm. The parameters recreated if change this operation. Valid for block algorithm only.
         /// </summary>
         public abstract SymmetricCipherMode Mode { get; set; }
 
@@ -67,7 +67,7 @@ namespace Honoo.BouncyCastle
         public string Name => _name;
 
         /// <summary>
-        /// Gets or sets the padding mode used in the symmetric algorithm. Valid for block algorithm only.
+        /// Gets or sets the padding mode used in the symmetric algorithm. The parameters recreated if change this operation. Valid for block algorithm only.
         /// </summary>
         public abstract SymmetricPaddingMode Padding { get; set; }
 
@@ -104,52 +104,12 @@ namespace Honoo.BouncyCastle
         }
 
         /// <summary>
-        /// Create CMAC by this symmetric algorithm. Throw <see cref="CryptographicException"/> if the algorithm is not a block algorithm.
-        /// </summary>
-        /// <returns></returns>
-        public CMAC CreateCMAC()
-        {
-            return CreateCMAC(_blockSize);
-        }
-
-        /// <summary>
-        /// Create CMAC by this symmetric algorithm. Throw <see cref="CryptographicException"/> if the algorithm is not a block algorithm.
-        /// </summary>
-        /// <param name="macSize">Legal mac size is between 8 and symmetric algorithm block size bits (8 bits increments).</param>
-        /// <returns></returns>
-        public CMAC CreateCMAC(int macSize)
-        {
-            SymmetricAlgorithmName.TryGetAlgorithmName(_name, out SymmetricAlgorithmName algorithmName);
-            return new CMAC(algorithmName, macSize);
-        }
-
-        /// <summary>
-        /// Create MAC by this symmetric algorithm. Throw <see cref="CryptographicException"/> if the algorithm is not a block algorithm.
-        /// </summary>
-        /// <returns></returns>
-        public MAC CreateMAC()
-        {
-            return CreateMAC(_blockSize);
-        }
-
-        /// <summary>
-        /// Create MAC by this symmetric algorithm. Throw <see cref="CryptographicException"/> if the algorithm is not a block algorithm.
-        /// </summary>
-        /// <param name="macSize">Legal mac size is between 8 and symmetric algorithm block size bits (8 bits increments).</param>
-        /// <returns></returns>
-        public MAC CreateMAC(int macSize)
-        {
-            SymmetricAlgorithmName.TryGetAlgorithmName(_name, out SymmetricAlgorithmName algorithmName);
-            return new MAC(algorithmName, macSize);
-        }
-
-        /// <summary>
         /// Decrypts data with the symmetric algorithm.
         /// </summary>
         /// <returns></returns>
         public byte[] DecryptFinal()
         {
-            InspectKey();
+            InspectParameters();
             if (_decryptor == null)
             {
                 _decryptor = GetCipher(false);
@@ -178,7 +138,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public byte[] DecryptFinal(byte[] buffer, int offset, int length)
         {
-            InspectKey();
+            InspectParameters();
             if (_decryptor == null)
             {
                 _decryptor = GetCipher(false);
@@ -199,7 +159,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public int DecryptUpdate(byte[] inputBuffer, int inOffset, int inLength, byte[] outputBuffer, int outOffset)
         {
-            InspectKey();
+            InspectParameters();
             if (_decryptor == null)
             {
                 _decryptor = GetCipher(false);
@@ -213,7 +173,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public byte[] EncryptFinal()
         {
-            InspectKey();
+            InspectParameters();
             if (_encryptor == null)
             {
                 _encryptor = GetCipher(true);
@@ -242,7 +202,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public byte[] EncryptFinal(byte[] buffer, int offset, int length)
         {
-            InspectKey();
+            InspectParameters();
             if (_encryptor == null)
             {
                 _encryptor = GetCipher(true);
@@ -263,7 +223,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public int EncryptUpdate(byte[] inputBuffer, int inOffset, int inLength, byte[] outputBuffer, int outOffset)
         {
-            InspectKey();
+            InspectParameters();
             if (_encryptor == null)
             {
                 _encryptor = GetCipher(true);
@@ -279,7 +239,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public void ExportParameters(out byte[] key, out byte[] iv)
         {
-            InspectKey();
+            InspectParameters();
             if (_parameters.GetType() == typeof(AeadParameters))
             {
                 AeadParameters parameters = (AeadParameters)_parameters;
@@ -300,6 +260,11 @@ namespace Honoo.BouncyCastle
                 iv = null;
             }
         }
+
+        /// <summary>
+        /// Renew parameters of the algorithm by default key size and iv size.
+        /// </summary>
+        public abstract void GenerateParameters();
 
         /// <summary>
         /// Renew parameters of the algorithm.
@@ -331,11 +296,6 @@ namespace Honoo.BouncyCastle
             _decryptor = null;
             _initialized = true;
         }
-
-        /// <summary>
-        /// Renew parameters of the algorithm by default key size and iv size.
-        /// </summary>
-        public abstract void GenerateParameters();
 
         /// <summary>
         /// Imports key and iv.
@@ -372,7 +332,7 @@ namespace Honoo.BouncyCastle
         public void Reset()
         {
             /*
-             * BUG: GCM cipher mode cannot be auto reused. So set null.
+             * BUG: GCM/GOFB cipher mode cannot be auto reused. So set null.
              */
             _encryptor = null;
             _decryptor = null;
@@ -396,7 +356,7 @@ namespace Honoo.BouncyCastle
 
         internal ICipherParameters ExportParameters()
         {
-            InspectKey();
+            InspectParameters();
             return _parameters;
         }
 
@@ -429,7 +389,7 @@ namespace Honoo.BouncyCastle
             return new KeyParameter(key);
         }
 
-        private void InspectKey()
+        private void InspectParameters()
         {
             if (!_initialized)
             {

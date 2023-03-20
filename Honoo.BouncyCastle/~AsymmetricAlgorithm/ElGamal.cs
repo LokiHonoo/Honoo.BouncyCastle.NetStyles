@@ -1,4 +1,7 @@
 ﻿using Honoo.BouncyCastle.Utilities;
+using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Encodings;
 using Org.BouncyCastle.Crypto.Engines;
@@ -6,6 +9,9 @@ using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.X509;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -15,24 +21,23 @@ namespace Honoo.BouncyCastle
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class ElGamal : AsymmetricAlgorithm
+    public sealed class ElGamal : AsymmetricAlgorithm, IAsymmetricEncryptionAlgorithm
     {
         #region Properties
 
         private const int DEFAULT_CERTAINTY = 20;
         private const int DEFAULT_KEY_SIZE = 768;
+        private const string NAME = "ElGamal";
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) };
         private IAsymmetricBlockCipher _decryptor = null;
         private IAsymmetricBlockCipher _encryptor = null;
         private bool _initialized = false;
         private int _keySize = DEFAULT_KEY_SIZE;
-        private AsymmetricPaddingMode _padding = AsymmetricPaddingMode.PKCS1;
+        private AsymmetricEncryptionPaddingMode _padding = AsymmetricEncryptionPaddingMode.PKCS1;
         private AsymmetricKeyParameter _privateKey = null;
         private AsymmetricKeyParameter _publicKey = null;
 
-        /// <summary>
-        /// Gets legal input bytes length on decrypt.
-        /// </summary>
+        /// <inheritdoc/>
         public int DecryptInputLength
         {
             get
@@ -45,19 +50,17 @@ namespace Honoo.BouncyCastle
                     }
                     else
                     {
-                        return _padding == AsymmetricPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
+                        return _padding == AsymmetricEncryptionPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
                     }
                 }
                 else
                 {
-                    return _padding == AsymmetricPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
+                    return _padding == AsymmetricEncryptionPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
                 }
             }
         }
 
-        /// <summary>
-        /// Gets legal input bytes length on decrypt.
-        /// </summary>
+        /// <inheritdoc/>
         public int DecryptOutputLength
         {
             get
@@ -80,15 +83,11 @@ namespace Honoo.BouncyCastle
             }
         }
 
-        /// <summary>
-        /// Gets legal input bytes length on encrypt.
-        /// </summary>
+        /// <inheritdoc/>
         public int EncryptInputLength => GetPaddedLength();
 
-        /// <summary>
-        /// Gets legal input bytes length on encrypt.
-        /// </summary>
-        public int EncryptOutputLength => _padding == AsymmetricPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
+        /// <inheritdoc/>
+        public int EncryptOutputLength => _padding == AsymmetricEncryptionPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
 
         /// <summary>
         /// Get or set key size bits.
@@ -100,10 +99,8 @@ namespace Honoo.BouncyCastle
         /// </summary>
         public KeySizes[] LegalKeySizes => (KeySizes[])LEGAL_KEY_SIZES.Clone();
 
-        /// <summary>
-        /// Represents the padding mode used in the symmetric algorithm.
-        /// </summary>
-        public AsymmetricPaddingMode Padding
+        /// <inheritdoc/>
+        public AsymmetricEncryptionPaddingMode Padding
         {
             get => _padding;
             set
@@ -124,7 +121,7 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Initializes a new instance of the ElGamal class.
         /// </summary>
-        public ElGamal() : base("ElGamal", AsymmetricAlgorithmKind.Encryption)
+        public ElGamal() : base(NAME, AsymmetricAlgorithmKind.Encryption)
         {
         }
 
@@ -139,147 +136,9 @@ namespace Honoo.BouncyCastle
             return new ElGamal();
         }
 
-        /// <summary>
-        /// Decrypts data with the asymmetric algorithm.
-        /// </summary>
-        /// <param name="rgb">The encrypted data.</param>
-        /// <returns></returns>
-        public byte[] Decrypt(byte[] rgb)
-        {
-            return Decrypt(rgb, 0, rgb.Length);
-        }
+        #region GenerateParameters
 
-        /// <summary>
-        /// Decrypts data with the asymmetric algorithm.
-        /// </summary>
-        /// <param name="buffer">The encrypted data buffer.</param>
-        /// <param name="offset">The starting offset to read.</param>
-        /// <param name="length">The length to read.</param>
-        /// <returns></returns>
-        public byte[] Decrypt(byte[] buffer, int offset, int length)
-        {
-            InspectKey();
-            if (_decryptor == null)
-            {
-                _decryptor = GetCipher(false, null, null);
-            }
-            return _decryptor.ProcessBlock(buffer, offset, length);
-        }
-
-        /// <summary>
-        /// Auto set <see cref="Padding"/> = <see cref="AsymmetricPaddingMode.OAEP"/>, Decrypts data with the asymmetric algorithm.
-        /// </summary>
-        /// <param name="buffer">The encrypted data buffer.</param>
-        /// <param name="offset">The starting offset to read.</param>
-        /// <param name="length">The length to read.</param>
-        /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
-        /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
-        /// <returns></returns>
-        public byte[] Decrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
-        {
-            if (hashForOAEP is null)
-            {
-                throw new ArgumentNullException(nameof(hashForOAEP));
-            }
-            if (mgf1ForOAEP is null)
-            {
-                throw new ArgumentNullException(nameof(mgf1ForOAEP));
-            }
-            InspectKey();
-            _padding = AsymmetricPaddingMode.OAEP;
-            _decryptor = GetCipher(false, hashForOAEP, mgf1ForOAEP);
-            return _decryptor.ProcessBlock(buffer, offset, length);
-        }
-
-        /// <summary>
-        /// Encrypts data with the asymmetric algorithm.
-        /// </summary>
-        /// <param name="rgb">The data to be decrypted.</param>
-        /// <returns></returns>
-        public byte[] Encrypt(byte[] rgb)
-        {
-            return Encrypt(rgb, 0, rgb.Length);
-        }
-
-        /// <summary>
-        /// Encrypts data with the asymmetric algorithm.
-        /// </summary>
-        /// <param name="buffer">The data buffer to be decrypted.</param>
-        /// <param name="offset">The starting offset to read.</param>
-        /// <param name="length">The length to read.</param>
-        /// <returns></returns>
-        public byte[] Encrypt(byte[] buffer, int offset, int length)
-        {
-            InspectKey();
-            if (_encryptor == null)
-            {
-                _encryptor = GetCipher(true, null, null);
-            }
-            return _encryptor.ProcessBlock(buffer, offset, length);
-        }
-
-        /// <summary>
-        /// Auto set <see cref="Padding"/> = <see cref="AsymmetricPaddingMode.OAEP"/>, Encrypts data with the asymmetric algorithm.
-        /// </summary>
-        /// <param name="buffer">The data buffer to be decrypted.</param>
-        /// <param name="offset">The starting offset to read.</param>
-        /// <param name="length">The length to read.</param>
-        /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
-        /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
-        /// <returns></returns>
-        public byte[] Encrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
-        {
-            if (hashForOAEP is null)
-            {
-                throw new ArgumentNullException(nameof(hashForOAEP));
-            }
-            if (mgf1ForOAEP is null)
-            {
-                throw new ArgumentNullException(nameof(mgf1ForOAEP));
-            }
-            InspectKey();
-            _padding = AsymmetricPaddingMode.OAEP;
-            _encryptor = GetCipher(true, hashForOAEP, mgf1ForOAEP);
-            return _encryptor.ProcessBlock(buffer, offset, length);
-        }
-
-        /// <summary>
-        /// Exports a pem string containing the asymmetric algorithm key information associated.
-        /// </summary>
-        /// <param name="includePrivate">true to include the private key; otherwise, false.</param>
-        /// <returns></returns>
-        public string ExportPem(bool includePrivate)
-        {
-            InspectKey();
-            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(asymmetricKey);
-                return writer.ToString();
-            }
-        }
-
-        /// <summary>
-        /// Exports a pem string containing the asymmetric algorithm private key information associated.
-        /// </summary>
-        /// <param name="dekAlgorithmName">DEK algorithm name.</param>
-        /// <param name="password"></param>
-        /// <returns></returns>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            InspectKey();
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
-                return writer.ToString();
-            }
-        }
-
-        /// <summary>
-        /// Renew private key and public key of the algorithm by default.
-        /// </summary>
+        /// <inheritdoc/>
         public void GenerateParameters()
         {
             GenerateParameters(DEFAULT_KEY_SIZE, DEFAULT_CERTAINTY);
@@ -315,58 +174,250 @@ namespace Honoo.BouncyCastle
             _initialized = true;
         }
 
-        /// <summary>
-        /// Imports a pem string that represents asymmetric algorithm key information.
-        /// </summary>
-        /// <param name="pem">A pem string that represents an asymmetric algorithm key.</param>
+        #endregion GenerateParameters
+
+        #region Export/Import Parameters
+
+        /// <inheritdoc/>
+        public byte[] ExportKeyInfo(bool includePrivate)
+        {
+            InspectParameters();
+            if (includePrivate)
+            {
+                PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(_privateKey);
+                return privateKeyInfo.GetEncoded();
+            }
+            else
+            {
+                SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(_publicKey);
+                return publicKeyInfo.GetEncoded();
+            }
+        }
+
+        /// <inheritdoc/>
+        public byte[] ExportKeyInfo(PBEAlgorithmName pbeAlgorithmName, string password)
+        {
+            InspectParameters();
+            byte[] salt = new byte[16];
+            Common.SecureRandom.NextBytes(salt);
+            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
+                pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
+            return enc.GetEncoded();
+        }
+
+        /// <inheritdoc/>
+        public string ExportPem(bool includePrivate)
+        {
+            InspectParameters();
+            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
+            using (StringWriter writer = new StringWriter())
+            {
+                PemWriter pemWriter = new PemWriter(writer);
+                pemWriter.WriteObject(asymmetricKey);
+                return writer.ToString();
+            }
+        }
+
+        /// <inheritdoc/>
+        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
+        {
+            InspectParameters();
+            using (StringWriter writer = new StringWriter())
+            {
+                PemWriter pemWriter = new PemWriter(writer);
+                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
+                return writer.ToString();
+            }
+        }
+
+        /// <inheritdoc/>
+        public void ImportKeyInfo(byte[] keyInfo)
+        {
+            ElGamalPrivateKeyParameters privateKey = null;
+            ElGamalPublicKeyParameters publicKey = null;
+            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            try
+            {
+                PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
+                privateKey = (ElGamalPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
+                publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
+            }
+            catch
+            {
+                try
+                {
+                    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
+                    publicKey = (ElGamalPublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                }
+                catch
+                {
+                }
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Parameters.P.BitLength;
+            _encryptor = null;
+            _decryptor = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public void ImportKeyInfo(byte[] keyInfo, string password)
+        {
+            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
+            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
+            ElGamalPrivateKeyParameters privateKey = (ElGamalPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
+            ElGamalPublicKeyParameters publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Parameters.P.BitLength;
+            _encryptor = null;
+            _decryptor = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
         public void ImportPem(string pem)
         {
             using (StringReader reader = new StringReader(pem))
             {
+                ElGamalPrivateKeyParameters privateKey = null;
+                ElGamalPublicKeyParameters publicKey;
                 object obj = new PemReader(reader).ReadObject();
                 if (obj.GetType() == typeof(ElGamalPrivateKeyParameters))
                 {
-                    ElGamalPrivateKeyParameters privateKey = (ElGamalPrivateKeyParameters)obj;
-                    _privateKey = privateKey;
+                    privateKey = (ElGamalPrivateKeyParameters)obj;
                     BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
-                    _publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
+                    publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
                 }
                 else
                 {
-                    _privateKey = null;
-                    _publicKey = (ElGamalPublicKeyParameters)obj;
+                    publicKey = (ElGamalPublicKeyParameters)obj;
                 }
-                _keySize = ((ElGamalPublicKeyParameters)_publicKey).Parameters.P.BitLength;
+                _privateKey = privateKey;
+                _publicKey = publicKey;
+                _keySize = publicKey.Parameters.P.BitLength;
                 _encryptor = null;
                 _decryptor = null;
                 _initialized = true;
             }
         }
 
-        /// <summary>
-        /// Imports a pem string that represents asymmetric algorithm private key information.
-        /// </summary>
-        /// <param name="pem">A pem string that represents an asymmetric algorithm private key.</param>
-        /// <param name="password"></param>
+        /// <inheritdoc/>
         public void ImportPem(string pem, string password)
         {
             using (StringReader reader = new StringReader(pem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
                 ElGamalPrivateKeyParameters privateKey = (ElGamalPrivateKeyParameters)obj;
-                _privateKey = privateKey;
                 BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
-                _publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
-                _keySize = ((ElGamalPublicKeyParameters)_publicKey).Parameters.P.BitLength;
+                ElGamalPublicKeyParameters publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
+                _privateKey = privateKey;
+                _publicKey = publicKey;
+                _keySize = publicKey.Parameters.P.BitLength;
                 _encryptor = null;
                 _decryptor = null;
                 _initialized = true;
             }
         }
+
+        #endregion Export/Import Parameters
+
         /// <inheritdoc/>
-        public override void Reset()
+        public byte[] Decrypt(byte[] rgb)
         {
+            return Decrypt(rgb, 0, rgb.Length);
         }
+
+        /// <inheritdoc/>
+        public byte[] Decrypt(byte[] buffer, int offset, int length)
+        {
+            InspectParameters();
+            if (_decryptor == null)
+            {
+                _decryptor = GetCipher(false, null, null);
+            }
+            return _decryptor.ProcessBlock(buffer, offset, length);
+        }
+
+        /// <inheritdoc/>
+        public byte[] Decrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
+        {
+            if (hashForOAEP is null)
+            {
+                throw new ArgumentNullException(nameof(hashForOAEP));
+            }
+            if (mgf1ForOAEP is null)
+            {
+                throw new ArgumentNullException(nameof(mgf1ForOAEP));
+            }
+            InspectParameters();
+            _padding = AsymmetricEncryptionPaddingMode.OAEP;
+            _decryptor = GetCipher(false, hashForOAEP, mgf1ForOAEP);
+            return _decryptor.ProcessBlock(buffer, offset, length);
+        }
+
+        /// <inheritdoc/>
+        public byte[] Encrypt(byte[] rgb)
+        {
+            return Encrypt(rgb, 0, rgb.Length);
+        }
+
+        /// <inheritdoc/>
+        public byte[] Encrypt(byte[] buffer, int offset, int length)
+        {
+            InspectParameters();
+            if (_encryptor == null)
+            {
+                _encryptor = GetCipher(true, null, null);
+            }
+            return _encryptor.ProcessBlock(buffer, offset, length);
+        }
+
+        /// <inheritdoc/>
+        public byte[] Encrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
+        {
+            if (hashForOAEP is null)
+            {
+                throw new ArgumentNullException(nameof(hashForOAEP));
+            }
+            if (mgf1ForOAEP is null)
+            {
+                throw new ArgumentNullException(nameof(mgf1ForOAEP));
+            }
+            InspectParameters();
+            _padding = AsymmetricEncryptionPaddingMode.OAEP;
+            _encryptor = GetCipher(true, hashForOAEP, mgf1ForOAEP);
+            return _encryptor.ProcessBlock(buffer, offset, length);
+        }
+
+        /// <inheritdoc/>
+        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
+        {
+            return this;
+        }
+
+        /// <inheritdoc/>
+        public override IKeyExchangeA GetKeyExchangeAInterface()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public override IKeyExchangeB GetKeyExchangeBInterface()
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc/>
+        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Determines whether the specified size is valid for the current algorithm.
         /// </summary>
@@ -388,7 +439,7 @@ namespace Honoo.BouncyCastle
 
         internal static AsymmetricAlgorithmName GetAlgorithmName()
         {
-            return new AsymmetricAlgorithmName("ElGamal", AsymmetricAlgorithmKind.Encryption, () => { return new ElGamal(); });
+            return new AsymmetricAlgorithmName(NAME, AsymmetricAlgorithmKind.Encryption, () => { return new ElGamal(); });
         }
 
         private IAsymmetricBlockCipher GetCipher(bool encryption, HashAlgorithmName hash, HashAlgorithmName mgf1)
@@ -396,9 +447,9 @@ namespace Honoo.BouncyCastle
             IAsymmetricBlockCipher cipher = new ElGamalEngine();
             switch (_padding)
             {
-                case AsymmetricPaddingMode.NoPadding: break;
-                case AsymmetricPaddingMode.PKCS1: cipher = new Pkcs1Encoding(cipher); break;
-                case AsymmetricPaddingMode.OAEP:
+                case AsymmetricEncryptionPaddingMode.NoPadding: break;
+                case AsymmetricEncryptionPaddingMode.PKCS1: cipher = new Pkcs1Encoding(cipher); break;
+                case AsymmetricEncryptionPaddingMode.OAEP:
                     if (hash == null && mgf1 == null)
                     {
                         cipher = new OaepEncoding(cipher);
@@ -417,7 +468,7 @@ namespace Honoo.BouncyCastle
                     }
                     break;
 
-                case AsymmetricPaddingMode.ISO9796_1: throw new CryptographicException("ElGamal is unsupported ISO9796_1 padding mode.");
+                case AsymmetricEncryptionPaddingMode.ISO9796_1: throw new CryptographicException("ElGamal is unsupported ISO9796_1 padding mode.");
                 default: throw new CryptographicException("Unsupported padding mode.");
             }
             cipher.Init(encryption, encryption ? _publicKey : _privateKey);
@@ -429,15 +480,15 @@ namespace Honoo.BouncyCastle
             int length = _keySize / 8;
             switch (_padding)
             {
-                case AsymmetricPaddingMode.NoPadding: return length - 1;
-                case AsymmetricPaddingMode.PKCS1: return length - 11;
-                case AsymmetricPaddingMode.OAEP: return length - 42;
-                case AsymmetricPaddingMode.ISO9796_1: return 0;
+                case AsymmetricEncryptionPaddingMode.NoPadding: return length - 1;
+                case AsymmetricEncryptionPaddingMode.PKCS1: return length - 11;
+                case AsymmetricEncryptionPaddingMode.OAEP: return length - 42;
+                case AsymmetricEncryptionPaddingMode.ISO9796_1: return 0;
                 default: throw new CryptographicException("Unsupported padding mode.");
             }
         }
 
-        private void InspectKey()
+        private void InspectParameters()
         {
             if (!_initialized)
             {

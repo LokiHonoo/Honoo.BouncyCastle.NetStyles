@@ -24,6 +24,7 @@ namespace Test
             DoDSA();
             DoRSA();
             DoECDSA();
+            DoAll();
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine($"Total= {_total}  Diff= {_diff}  Ignore= {_ignore}");
@@ -32,20 +33,32 @@ namespace Test
 
         private static void Demo()
         {
-            RSA rsa1 = new RSA()
+            ECDSA alg1 = (ECDSA)AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA);
+            IAsymmetricSignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA).GetSignatureInterface();
+
+            var pem = alg1.ExportPem(false);
+            alg2.ImportPem(pem);
+
+            byte[] signature = alg1.SignFinal(_input);
+            _ = alg2.VerifyFinal(_input, signature);
+        }
+
+        private static void DoAll()
+        {
+            var names = SignatureAlgorithmName.GetNames();
+            foreach (var name in names)
             {
-                SignaturePadding = RSASignaturePaddingMode.PKCS1,
-                HashAlgorithm = HashAlgorithmName.SHA384
-            };
-            RSA rsa2 = new RSA()
-            {
-                SignaturePadding = RSASignaturePaddingMode.PKCS1,
-                HashAlgorithm = HashAlgorithmName.SHA384
-            };
-            var pem = rsa1.ExportPem(false);
-            rsa2.ImportPem(pem);
-            byte[] signature = rsa1.SignFinal(_input);
-            _ = rsa2.VerifyFinal(_input, signature);
+                _total++;
+                var alg1 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
+                var alg2 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
+                string pem1 = alg1.ExportPem(true);
+                string pem2 = alg1.ExportPem(false);
+                alg2.ImportPem(pem1);
+                alg2.ImportPem(pem2);
+                byte[] signature = alg1.SignFinal(_input);
+                bool same = alg2.VerifyFinal(_input, signature);
+                WriteResult(alg1.SignatureAlgorithm, same);
+            }
         }
 
         private static void DoDSA()
@@ -61,14 +74,14 @@ namespace Test
                 byte[] signature = alg1.SignFinal(_input);
                 SHA1 sha1 = new SHA1();
                 bool same = net.VerifySignature(sha1.ComputeHash(_input), signature);
-                WriteResult("DSA BouncyCastle <--> .NET", same);
+                WriteResult($"{alg1.SignatureAlgorithm} BC <--> NET", same);
             }
             {
                 _total++;
                 SHA1 sha1 = new SHA1();
                 byte[] signature = net.CreateSignature(sha1.ComputeHash(_input));
                 bool same = alg2.VerifyFinal(_input, signature);
-                WriteResult("DSA BouncyCastle <--> .NET", same);
+                WriteResult($"{alg2.SignatureAlgorithm} BC <--> NET", same);
             }
         }
 
@@ -78,24 +91,12 @@ namespace Test
             ECDSA alg2 = new ECDSA() { HashAlgorithm = HashAlgorithmName.BLAKE2s256 };
             var pem = alg1.ExportPem(false);
             alg2.ImportPem(pem);
+            var extensions = (ECDSASignatureExtension[])Enum.GetValues(typeof(ECDSASignatureExtension));
+            foreach (var extension in extensions)
             {
                 _total++;
-                byte[] signature = alg1.SignFinal(_input);
-                bool same = alg2.VerifyFinal(_input, signature);
-                WriteResult(alg1.SignatureAlgorithm, same);
-            }
-            {
-                _total++;
-                alg1.SignatureExtension = ECDSASignatureExtension.Plain;
-                alg2.SignatureExtension = ECDSASignatureExtension.Plain;
-                byte[] signature = alg1.SignFinal(_input);
-                bool same = alg2.VerifyFinal(_input, signature);
-                WriteResult(alg1.SignatureAlgorithm, same);
-            }
-            {
-                _total++;
-                alg1.SignatureExtension = ECDSASignatureExtension.ECNR;
-                alg2.SignatureExtension = ECDSASignatureExtension.ECNR;
+                alg1.SignatureExtension = extension;
+                alg2.SignatureExtension = extension;
                 byte[] signature = alg1.SignFinal(_input);
                 bool same = alg2.VerifyFinal(_input, signature);
                 WriteResult(alg1.SignatureAlgorithm, same);
@@ -107,14 +108,20 @@ namespace Test
             var net = new System.Security.Cryptography.RSACryptoServiceProvider();
             RSA alg1 = new RSA() { HashAlgorithm = HashAlgorithmName.SHA512 };
             RSA alg2 = new RSA() { HashAlgorithm = HashAlgorithmName.SHA512 };
-            var parameters = alg1.ExportParameters(false);
+            var parameters = alg1.ExportParameters(true);
             alg2.ImportParameters(parameters);
             net.ImportParameters(parameters);
             {
                 _total++;
                 byte[] signature = alg1.SignFinal(_input);
                 bool same = net.VerifyData(_input, "SHA512", signature);
-                WriteResult("RSA BouncyCastle <--> .NET", same);
+                WriteResult($"{alg1.SignatureAlgorithm} BC <--> NET", same);
+            }
+            {
+                _total++;
+                byte[] signature = net.SignData(_input, "SHA512");
+                bool same = alg1.VerifyFinal(_input, signature);
+                WriteResult($"{alg1.SignatureAlgorithm} BC <--> NET", same);
             }
             var paddings = (RSASignaturePaddingMode[])Enum.GetValues(typeof(RSASignaturePaddingMode));
             foreach (var padding in paddings)

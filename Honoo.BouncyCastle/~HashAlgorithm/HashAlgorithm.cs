@@ -93,15 +93,6 @@ namespace Honoo.BouncyCastle
         }
 
         /// <summary>
-        /// Create HMAC by this hash algorithm.
-        /// </summary>
-        /// <returns></returns>
-        public HMAC CreateHMAC()
-        {
-            return new HMAC(this);
-        }
-
-        /// <summary>
         /// Reset calculator of the algorithm.
         /// </summary>
         public void Reset()

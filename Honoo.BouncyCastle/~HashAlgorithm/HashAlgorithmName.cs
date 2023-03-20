@@ -19,52 +19,117 @@ namespace Honoo.BouncyCastle
         #region AlgorithmNames
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 256 bits.
+        /// Hash size 256 bits.
         /// </summary>
         public static HashAlgorithmName BLAKE2b256 { get; } = BLAKE2b.GetAlgorithmName(256);
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 384 bits.
+        /// Hash size 384 bits.
         /// </summary>
         public static HashAlgorithmName BLAKE2b384 { get; } = BLAKE2b.GetAlgorithmName(384);
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 512 bits.
+        /// Hash size 512 bits.
         /// </summary>
         public static HashAlgorithmName BLAKE2b512 { get; } = BLAKE2b.GetAlgorithmName(512);
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 256 bits.
+        /// Hash size 256 bits.
         /// </summary>
         public static HashAlgorithmName BLAKE2s256 { get; } = BLAKE2s.GetAlgorithmName(256);
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 128 bits.
+        /// Hash size 256 bits.
+        /// </summary>
+        public static HashAlgorithmName GOST3411 { get; } = Honoo.BouncyCastle.GOST3411.GetAlgorithmName();
+
+        /// <summary>
+        /// Hash size 256 bits.
+        /// </summary>
+        public static HashAlgorithmName GOST3411_2012_256 { get; } = GOST3411_2012.GetAlgorithmName(256);
+
+        /// <summary>
+        /// Hash size 512 bits.
+        /// </summary>
+        public static HashAlgorithmName GOST3411_2012_512 { get; } = GOST3411_2012.GetAlgorithmName(512);
+
+        /// <summary>
+        /// Hash size 128 bits.
         /// </summary>
         public static HashAlgorithmName MD2 { get; } = Honoo.BouncyCastle.MD2.GetAlgorithmName();
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 160 bits.
+        /// Hash size 128 bits.
+        /// </summary>
+        public static HashAlgorithmName MD4 { get; } = Honoo.BouncyCastle.MD4.GetAlgorithmName();
+
+        /// <summary>
+        /// Hash size 128 bits.
+        /// </summary>
+        public static HashAlgorithmName MD5 { get; } = Honoo.BouncyCastle.MD5.GetAlgorithmName();
+
+        /// <summary>
+        /// Hash size 128 bits.
+        /// </summary>
+        public static HashAlgorithmName RIPEMD128 { get; } = Honoo.BouncyCastle.RIPEMD128.GetAlgorithmName();
+
+        /// <summary>
+        /// Hash size 160 bits.
+        /// </summary>
+        public static HashAlgorithmName RIPEMD160 { get; } = Honoo.BouncyCastle.RIPEMD160.GetAlgorithmName();
+
+        /// <summary>
+        /// Hash size 256 bits.
+        /// </summary>
+        public static HashAlgorithmName RIPEMD256 { get; } = Honoo.BouncyCastle.RIPEMD256.GetAlgorithmName();
+
+        /// <summary>
+        /// Hash size 320 bits.
+        /// </summary>
+        public static HashAlgorithmName RIPEMD320 { get; } = Honoo.BouncyCastle.RIPEMD320.GetAlgorithmName();
+
+        /// <summary>
+        /// Hash size 160 bits.
         /// </summary>
         public static HashAlgorithmName SHA1 { get; } = Honoo.BouncyCastle.SHA1.GetAlgorithmName();
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 224 bits.
+        /// Hash size 224 bits.
         /// </summary>
         public static HashAlgorithmName SHA224 { get; } = Honoo.BouncyCastle.SHA224.GetAlgorithmName();
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 256 bits.
+        /// Hash size 256 bits.
         /// </summary>
         public static HashAlgorithmName SHA256 { get; } = Honoo.BouncyCastle.SHA256.GetAlgorithmName();
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 384 bits.
+        /// Hash size 224 bits.
+        /// </summary>
+        public static HashAlgorithmName SHA3_224 { get; } = SHA3.GetAlgorithmName(224);
+
+        /// <summary>
+        /// Hash size 256 bits.
+        /// </summary>
+        public static HashAlgorithmName SHA3_256 { get; } = SHA3.GetAlgorithmName(256);
+
+        /// <summary>
+        /// Hash size 384 bits.
+        /// </summary>
+        public static HashAlgorithmName SHA3_384 { get; } = SHA3.GetAlgorithmName(384);
+
+        /// <summary>
+        /// Hash size 512 bits.
+        /// </summary>
+        public static HashAlgorithmName SHA3_512 { get; } = SHA3.GetAlgorithmName(512);
+
+        /// <summary>
+        /// Hash size 384 bits.
         /// </summary>
         public static HashAlgorithmName SHA384 { get; } = Honoo.BouncyCastle.SHA384.GetAlgorithmName();
 
         /// <summary>
-        /// SHA1 algorithm. Hash size 512 bits.
+        /// Hash size 512 bits.
         /// </summary>
         public static HashAlgorithmName SHA512 { get; } = Honoo.BouncyCastle.SHA512.GetAlgorithmName();
 
@@ -92,6 +157,11 @@ namespace Honoo.BouncyCastle
         /// Skein512-512 algorithm. Hash size 512 bits.
         /// </summary>
         public static HashAlgorithmName Skein512_512 { get; } = Skein.GetAlgorithmName(512, 512);
+
+        /// <summary>
+        /// Hash size 256 bits.
+        /// </summary>
+        public static HashAlgorithmName SM3 { get; } = Honoo.BouncyCastle.SM3.GetAlgorithmName();
 
         #endregion AlgorithmNames
 
@@ -146,9 +216,9 @@ namespace Honoo.BouncyCastle
                 //DSTU7564_256,
                 //DSTU7564_384,
                 //DSTU7564_512,
-                //GOST3411,
-                //GOST3411_2012_256,
-                //GOST3411_2012_512,
+                GOST3411,
+                GOST3411_2012_256,
+                GOST3411_2012_512,
                 //Keccak_128,
                 //Keccak_224,
                 //Keccak_256,
@@ -156,12 +226,12 @@ namespace Honoo.BouncyCastle
                 //Keccak_384,
                 //Keccak_512,
                 MD2,
-                //MD4,
-                //MD5,
-                //RIPEMD128,
-                //RIPEMD160,
-                //RIPEMD256,
-                //RIPEMD320,
+                MD4,
+                MD5,
+                RIPEMD128,
+                RIPEMD160,
+                RIPEMD256,
+                RIPEMD320,
                 SHA1,
                 SHA224,
                 SHA256,
@@ -169,16 +239,16 @@ namespace Honoo.BouncyCastle
                 SHA512,
                 SHA512_224,
                 SHA512_256,
-                //SHA3_224,
-                //SHA3_256,
-                //SHA3_384,
-                //SHA3_512,
+                SHA3_224,
+                SHA3_256,
+                SHA3_384,
+                SHA3_512,
                 //SHAKE_128,
                 //SHAKE_256,
                 Skein256_256,
                 Skein512_512,
                 Skein1024_1024,
-                //SM3,
+                SM3,
                 //Tiger,
                 //Whirlpool,
             };
@@ -209,9 +279,9 @@ namespace Honoo.BouncyCastle
                 //case "DSTU7564-256": algorithmName = DSTU7564_256; return true;
                 //case "DSTU7564-384": algorithmName = DSTU7564_384; return true;
                 //case "DSTU7564-512": algorithmName = DSTU7564_512; return true;
-                //case "GOST3411": algorithmName = GOST3411; return true;
-                //case "GOST3411-2012-256": algorithmName = GOST3411_2012_256; return true;
-                //case "GOST3411-2012-512": algorithmName = GOST3411_2012_512; return true;
+                case "GOST3411": algorithmName = GOST3411; return true;
+                case "GOST3411-2012-256": algorithmName = GOST3411_2012_256; return true;
+                case "GOST3411-2012-512": algorithmName = GOST3411_2012_512; return true;
                 //case "KECCAK128":case "KECCAK-128": algorithmName = Keccak128; return true;
                 //case "KECCAK224":case "KECCAK-224": algorithmName = Keccak224; return true;
                 //case "KECCAK256":case "KECCAK-256": algorithmName = Keccak256; return true;
@@ -219,12 +289,12 @@ namespace Honoo.BouncyCastle
                 //case "KECCAK384":case "KECCAK-384": algorithmName = Keccak384; return true;
                 //case "KECCAK512":case "KECCAK-512": algorithmName = Keccak512; return true;
                 case "MD2": algorithmName = MD2; return true;
-                //case "MD4": algorithmName = MD4; return true;
-                //case "MD5": algorithmName = MD5; return true;
-                //case "RIPEMD128": case "RIPEMD-128": algorithmName = RIPEMD128; return true;
-                //case "RIPEMD160": case "RIPEMD-160": algorithmName = RIPEMD160; return true;
-                //case "RIPEMD256": case "RIPEMD-256": algorithmName = RIPEMD256; return true;
-                //case "RIPEMD320": case "RIPEMD-320": algorithmName = RIPEMD320; return true;
+                case "MD4": algorithmName = MD4; return true;
+                case "MD5": algorithmName = MD5; return true;
+                case "RIPEMD128": case "RIPEMD-128": algorithmName = RIPEMD128; return true;
+                case "RIPEMD160": case "RIPEMD-160": algorithmName = RIPEMD160; return true;
+                case "RIPEMD256": case "RIPEMD-256": algorithmName = RIPEMD256; return true;
+                case "RIPEMD320": case "RIPEMD-320": algorithmName = RIPEMD320; return true;
                 case "SHA1": case "SHA": case "SHA-1": algorithmName = SHA1; return true;
                 case "SHA224": algorithmName = SHA224; return true;
                 case "SHA256": algorithmName = SHA256; return true;
@@ -232,16 +302,16 @@ namespace Honoo.BouncyCastle
                 case "SHA512": algorithmName = SHA512; return true;
                 case "SHA512-224": case "SHA512T224": algorithmName = SHA512_224; return true;
                 case "SHA512-256": case "SHA512T256": algorithmName = SHA512_256; return true;
-                //case "SHA3-224": algorithmName = SHA3_224; return true;
-                //case "SHA3-256": algorithmName = SHA3_256; return true;
-                //case "SHA3-384": algorithmName = SHA3_384; return true;
-                //case "SHA3-512": algorithmName = SHA3_512; return true;
+                case "SHA3-224": algorithmName = SHA3_224; return true;
+                case "SHA3-256": algorithmName = SHA3_256; return true;
+                case "SHA3-384": algorithmName = SHA3_384; return true;
+                case "SHA3-512": algorithmName = SHA3_512; return true;
                 //case "SHAKE128":case "SHAKE-128": algorithmName = SHAKE128; return true;
                 //case "SHAKE256":case "SHAKE-256": algorithmName = SHAKE_56; return true;
                 case "SKEIN256-256": case "SKEIN-256-256": algorithmName = Skein256_256; return true;
                 case "SKEIN512-512": case "SKEIN-512-512": algorithmName = Skein512_512; return true;
                 case "SKEIN1024-1024": case "SKEIN-1024-1024": algorithmName = Skein1024_1024; return true;
-                //case "SM3": algorithmName = SM3; return true;
+                case "SM3": algorithmName = SM3; return true;
                 //case "TIGER": algorithmName = Tiger; return true;
                 //case "WHIRLPOOL": algorithmName = Whirlpool; return true;
                 default: break;
