@@ -256,7 +256,7 @@ namespace Honoo.BouncyCastle
 
                 case SymmetricCipherMode.GOFB:
                     if (_blockSize == 64)
-                    {
+                    {                        
                         cipher = pad == null ? new BufferedBlockCipher(new GOfbBlockCipher(engine))
                             : new PaddedBufferedBlockCipher(new GOfbBlockCipher(engine), pad);
                         break;
