@@ -8,22 +8,22 @@ namespace Honoo.BouncyCastle
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class SHA3 : HashAlgorithm
+    public sealed class DSTU7564 : HashAlgorithm
     {
         #region Properties
 
-        private const string NAME = "SHA3-";
-        private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(224, 224, 0), new KeySizes(256, 512, 128) };
+        private const string NAME = "DSTU7564";
+        private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(256, 512, 128) };
 
         #endregion Properties
 
         #region Construction
 
         /// <summary>
-        /// Initializes a new instance of the SHA3 class.
+        /// Initializes a new instance of the DSTU7564 class.
         /// </summary>
-        /// <param name="hashSize">Legal hash size 224, 256, 384, 512 bits.</param>
-        public SHA3(int hashSize) : base($"{NAME}{hashSize}", hashSize)
+        /// <param name="hashSize">Legal hash size 256, 384, 512 bits.</param>
+        public DSTU7564(int hashSize) : base($"{NAME}{hashSize}", hashSize)
         {
             if (!ValidHashSize(hashSize, out string exception))
             {
@@ -36,19 +36,19 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Creates an instance of the algorithm.
         /// </summary>
-        /// <param name="hashSize">Legal hash size 224, 256, 384, 512 bits.</param>
+        /// <param name="hashSize">Legal hash size 256, 384, 512 bits.</param>
         /// <returns></returns>
-        public static SHA3 Create(int hashSize)
+        public static DSTU7564 Create(int hashSize)
         {
-            return new SHA3(hashSize);
+            return new DSTU7564(hashSize);
         }
 
         internal static HashAlgorithmName GetAlgorithmName(int hashSize)
         {
             return new HashAlgorithmName($"{NAME}{hashSize}",
                                          hashSize,
-                                         () => { return new Sha3Digest(hashSize); },
-                                         () => { return new SHA3(hashSize); });
+                                         () => { return new Dstu7564Digest(hashSize); },
+                                         () => { return new DSTU7564(hashSize); });
         }
 
         internal static bool ValidHashSize(int hashSize, out string exception)
@@ -60,7 +60,7 @@ namespace Honoo.BouncyCastle
             }
             else
             {
-                exception = "Legal hash size 224, 256, 384, 512 bits.";
+                exception = "Legal hash size 256, 384, 512 bits.";
                 return false;
             }
         }
@@ -68,7 +68,7 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         protected override IDigest GetDigest()
         {
-            return new Sha3Digest(_hashSize);
+            return new Dstu7564Digest(_hashSize);
         }
     }
 }

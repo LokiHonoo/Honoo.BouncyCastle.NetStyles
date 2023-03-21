@@ -8,27 +8,33 @@ namespace Honoo.BouncyCastle
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class GOST3411_2012 : HashAlgorithm
+    public sealed class CSHAKE : HashAlgorithm
     {
         #region Properties
 
-        private const string NAME = "GOST3411-2012-";
+        private const string NAME = "CSHAKE";
         private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(256, 512, 256) };
+        private readonly byte[] _customization;
+        private readonly byte[] _nist;
 
         #endregion Properties
 
         #region Construction
 
         /// <summary>
-        /// Initializes a new instance of the GOST3411_2012 class.
+        /// Initializes a new instance of the CSHAKE class.
         /// </summary>
         /// <param name="hashSize">Legal hash size 256, 512 bits.</param>
-        public GOST3411_2012(int hashSize) : base($"{NAME}{hashSize}", hashSize)
+        /// <param name="nist">Nist bytes.</param>
+        /// <param name="customization">Customization bytes.</param>
+        public CSHAKE(int hashSize, byte[] nist = null, byte[] customization = null) : base($"{NAME}{hashSize / 2}-{hashSize}", hashSize)
         {
             if (!ValidHashSize(hashSize, out string exception))
             {
                 throw new CryptographicException(exception);
             }
+            _nist = nist;
+            _customization = customization;
         }
 
         #endregion Construction
@@ -37,18 +43,20 @@ namespace Honoo.BouncyCastle
         /// Creates an instance of the algorithm.
         /// </summary>
         /// <param name="hashSize">Legal hash size 256, 512 bits.</param>
+        /// <param name="nist">NIST name. Avoid using it if not required.</param>
+        /// <param name="customization">Customization bytes.</param>
         /// <returns></returns>
-        public static GOST3411_2012 Create(int hashSize)
+        public static CSHAKE Create(int hashSize, byte[] nist = null, byte[] customization = null)
         {
-            return new GOST3411_2012(hashSize);
+            return new CSHAKE(hashSize, nist, customization);
         }
 
         internal static HashAlgorithmName GetAlgorithmName(int hashSize)
         {
-            return new HashAlgorithmName($"{NAME}{hashSize}",
+            return new HashAlgorithmName($"{NAME}{hashSize / 2}-{hashSize}",
                                          hashSize,
-                                         () => { return GetDigest(hashSize); },
-                                         () => { return new GOST3411_2012(hashSize); });
+                                         () => { return new CShakeDigest(hashSize / 2, null, null); },
+                                         () => { return new CSHAKE(hashSize); });
         }
 
         internal static bool ValidHashSize(int hashSize, out string exception)
@@ -68,19 +76,7 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         protected override IDigest GetDigest()
         {
-            return GetDigest(_hashSize);
-        }
-
-        private static IDigest GetDigest(int hashSize)
-        {
-            if (hashSize == 512)
-            {
-                return new Gost3411_2012_512Digest();
-            }
-            else
-            {
-                return new Gost3411_2012_256Digest();
-            }
+            return new CShakeDigest(_hashSize / 2, _nist, _customization);
         }
     }
 }

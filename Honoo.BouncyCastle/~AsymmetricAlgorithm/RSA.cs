@@ -105,9 +105,9 @@ namespace Honoo.BouncyCastle
             {
                 if (value != _hashAlgorithm)
                 {
-                    _hashAlgorithm = value ?? throw new CryptographicException("This parameter can't be null.");
                     _signer = null;
                     _verifier = null;
+                    _hashAlgorithm = value ?? throw new CryptographicException("This hash algorithm can't be null.");
                 }
             }
         }
@@ -616,8 +616,14 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         public void ResetSigner()
         {
-            _signer.Reset();
-            _verifier.Reset();
+            if (_signer != null)
+            {
+                _signer.Reset();
+            }
+            if (_verifier != null)
+            {
+                _verifier.Reset();
+            }
         }
 
         /// <inheritdoc/>

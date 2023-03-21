@@ -38,12 +38,17 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Symmetric block algorithm. Block size 64 bits. Legal key size 8-2040 bits (8 bits increments).
         /// </summary>
-        public static SymmetricAlgorithmName RC5 { get; } = Honoo.BouncyCastle.RC5_32.GetAlgorithmName();
+        public static SymmetricAlgorithmName RC5 { get; } = RC5_32.GetAlgorithmName();
 
         /// <summary>
         /// Symmetric block algorithm. Block size 128 bits. Legal key size 8-2040 bits (8 bits increments).
         /// </summary>
         public static SymmetricAlgorithmName RC5_64 { get; } = Honoo.BouncyCastle.RC5_64.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size is more than or equal to 8 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName RC6 { get; } = Honoo.BouncyCastle.RC6.GetAlgorithmName();
 
         /// <summary>
         /// Symmetric block algorithm. Block size 128 bits. Legal key size 128, 160, 192, 224, 256 bits.
@@ -143,7 +148,7 @@ namespace Honoo.BouncyCastle
                 //RC2,
                 RC5,
                 RC5_64,
-                //RC6,
+                RC6,
                 Rijndael128,
                 Rijndael160,
                 Rijndael192,
@@ -154,9 +159,9 @@ namespace Honoo.BouncyCastle
                 //SKIPJACK,
                 //SM4,
                 //TEA,
-                //Threefish_256,
-                //Threefish_512,
-                //Threefish_1024,
+                //Threefish256,
+                //Threefish512,
+                //Threefish1024,
                 //Tnepres,
                 //Twofish,
                 //XTEA,
@@ -206,7 +211,7 @@ namespace Honoo.BouncyCastle
                 //case "RC2": algorithmName = RC2; return true;
                 case "RC5": case "RC532": algorithmName = RC5; return true;
                 case "RC5-64": algorithmName = RC5_64; return true;
-                //case "RC6": algorithmName = RC6; return true;
+                case "RC6": algorithmName = RC6; return true;
                 case "RIJNDAEL128": case "RIJNDAEL-128": case "RIJNDAEL": algorithmName = Rijndael128; return true;
                 case "RIJNDAEL160": case "RIJNDAEL-160": algorithmName = Rijndael160; return true;
                 case "RIJNDAEL192": case "RIJNDAEL-192": algorithmName = Rijndael192; return true;
@@ -217,9 +222,9 @@ namespace Honoo.BouncyCastle
                 //case "SKIPJACK": algorithmName = SKIPJACK; return true;
                 //case "SM4": algorithmName = SM4; return true;
                 //case "TEA": algorithmName = TEA; return true;
-                //case "THREEFISH256": case "THREEFISH-256":  case "THREEFISH": algorithmName = Threefish_256; return true;
-                //case "THREEFISH512": case "THREEFISH-512": algorithmName = Threefish_512; return true;
-                // case "THREEFISH1024": case "THREEFISH-1024": algorithmName = Threefish_1024; return true;
+                //case "THREEFISH256": case "THREEFISH-256":  case "THREEFISH": algorithmName = Threefish256; return true;
+                //case "THREEFISH512": case "THREEFISH-512": algorithmName = Threefish512; return true;
+                // case "THREEFISH1024": case "THREEFISH-1024": algorithmName = Threefish1024; return true;
                 //case "TNEPRES": algorithmName = Tnepres; return true;
                 //case "TWOFISH": algorithmName = Twofish; return true;
                 //case "XTEA": algorithmName = XTEA; return true;

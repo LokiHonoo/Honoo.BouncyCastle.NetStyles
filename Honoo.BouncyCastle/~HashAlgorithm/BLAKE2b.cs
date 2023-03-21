@@ -11,6 +11,7 @@ namespace Honoo.BouncyCastle
     public sealed class BLAKE2b : HashAlgorithm
     {
         #region Properties
+
         private const string NAME = "BLAKE2b";
         private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(8, 512, 8) };
         private readonly byte[] _key;
@@ -30,9 +31,9 @@ namespace Honoo.BouncyCastle
         /// <param name="personalization">Personalization need null or less than 16 bytes.</param>
         public BLAKE2b(int hashSize, byte[] key = null, byte[] salt = null, byte[] personalization = null) : base($"{NAME}{hashSize}", hashSize)
         {
-            if (!DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
+            if (!ValidHashSize(hashSize, out string exception))
             {
-                throw new CryptographicException("Legal hash size 8-512 bits (8 bits increments).");
+                throw new CryptographicException(exception);
             }
             if (key != null && key.Length != 64)
             {
@@ -74,9 +75,18 @@ namespace Honoo.BouncyCastle
                                          () => { return new BLAKE2b(hashSize); });
         }
 
-        internal static bool ValidHashSize(int hashSize)
+        internal static bool ValidHashSize(int hashSize, out string exception)
         {
-            return DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize);
+            if (DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
+            {
+                exception = string.Empty;
+                return true;
+            }
+            else
+            {
+                exception = "Legal hash size 8-512 bits (8 bits increments).";
+                return false;
+            }
         }
 
         /// <inheritdoc/>

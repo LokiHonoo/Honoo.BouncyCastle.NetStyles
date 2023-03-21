@@ -6,21 +6,21 @@ namespace Honoo.BouncyCastle
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class MD4 : HashAlgorithm
+    public sealed class Tiger : HashAlgorithm
     {
         #region Properties
 
-        private const int HASH_SIZE = 128;
-        private const string NAME = "MD4";
+        private const int HASH_SIZE = 192;
+        private const string NAME = "Tiger";
 
         #endregion Properties
 
         #region Construction
 
         /// <summary>
-        /// Initializes a new instance of the MD4 class.
+        /// Initializes a new instance of the Tiger class.
         /// </summary>
-        public MD4() : base(NAME, HASH_SIZE)
+        public Tiger() : base(NAME, HASH_SIZE)
         {
         }
 
@@ -30,20 +30,20 @@ namespace Honoo.BouncyCastle
         /// Creates an instance of the algorithm.
         /// </summary>
         /// <returns></returns>
-        public static MD4 Create()
+        public static Tiger Create()
         {
-            return new MD4();
+            return new Tiger();
         }
 
         internal static HashAlgorithmName GetAlgorithmName()
         {
-            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new MD4Digest(); }, () => { return new MD4(); });
+            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new TigerDigest(); }, () => { return new Tiger(); });
         }
 
         /// <inheritdoc/>
         protected override IDigest GetDigest()
         {
-            return new MD4Digest();
+            return new TigerDigest();
         }
     }
 }

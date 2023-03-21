@@ -1,5 +1,6 @@
 ﻿using Honoo.BouncyCastle;
 using System;
+using System.Collections.Generic;
 
 namespace Test
 {
@@ -24,6 +25,8 @@ namespace Test
             DoDSA();
             DoRSA();
             DoECDSA();
+            DoEd25519();
+            DoEd448();
             DoAll();
             Console.WriteLine();
             Console.WriteLine();
@@ -45,12 +48,25 @@ namespace Test
 
         private static void DoAll()
         {
-            var names = SignatureAlgorithmName.GetNames();
-            foreach (var name in names)
+            var algorithmNames = new List<SignatureAlgorithmName>(SignatureAlgorithmName.GetNames());
+            string[] mechanisms = new string[]
+            {
+                "BLAKE2s128withSM2",
+                "SHA512/376withCVC-ECDSA",
+                "Skein264-512withECGOST3410-2001",
+                "SHA3-256withECGOST3410-2001",
+                "BLAKE2b64withSM2",
+            };
+            foreach (var mechanism in mechanisms)
+            {
+                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
+                algorithmNames.Add(algorithmName);
+            }
+            foreach (var algorithmName in algorithmNames)
             {
                 _total++;
-                var alg1 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
-                var alg2 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
+                var alg1 = AsymmetricAlgorithm.Create(algorithmName).GetSignatureInterface();
+                var alg2 = AsymmetricAlgorithm.Create(algorithmName).GetSignatureInterface();
                 string pem1 = alg1.ExportPem(true);
                 string pem2 = alg1.ExportPem(false);
                 alg2.ImportPem(pem1);
@@ -97,6 +113,42 @@ namespace Test
                 _total++;
                 alg1.SignatureExtension = extension;
                 alg2.SignatureExtension = extension;
+                byte[] signature = alg1.SignFinal(_input);
+                bool same = alg2.VerifyFinal(_input, signature);
+                WriteResult(alg1.SignatureAlgorithm, same);
+            }
+        }
+
+        private static void DoEd25519()
+        {
+            Ed25519 alg1 = new Ed25519();
+            Ed25519 alg2 = new Ed25519();
+            var pem = alg1.ExportPem(false);
+            alg2.ImportPem(pem);
+            var instances = (Ed25519SignatureInstance[])Enum.GetValues(typeof(Ed25519SignatureInstance));
+            foreach (var instance in instances)
+            {
+                _total++;
+                alg1.SignatureInstance = instance;
+                alg2.SignatureInstance = instance;
+                byte[] signature = alg1.SignFinal(_input);
+                bool same = alg2.VerifyFinal(_input, signature);
+                WriteResult(alg1.SignatureAlgorithm, same);
+            }
+        }
+
+        private static void DoEd448()
+        {
+            Ed448 alg1 = new Ed448();
+            Ed448 alg2 = new Ed448();
+            var pem = alg1.ExportPem(false);
+            alg2.ImportPem(pem);
+            var instances = (Ed448SignatureInstance[])Enum.GetValues(typeof(Ed448SignatureInstance));
+            foreach (var instance in instances)
+            {
+                _total++;
+                alg1.SignatureInstance = instance;
+                alg2.SignatureInstance = instance;
                 byte[] signature = alg1.SignFinal(_input);
                 bool same = alg2.VerifyFinal(_input, signature);
                 WriteResult(alg1.SignatureAlgorithm, same);

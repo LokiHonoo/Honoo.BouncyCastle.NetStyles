@@ -23,6 +23,8 @@ namespace Test
             _diff = 0;
             _ignore = 0;
             Demo();
+            DoEd25519();
+            DoEd448();
             DoDSA();
             DoRSA();
             DoElGamal();
@@ -36,7 +38,7 @@ namespace Test
         private static void Demo()
         {
             RSA rsa1 = new RSA();
-            string pem = rsa1.ExportPem(false); 
+            string pem = rsa1.ExportPem(false);
 
             RSA rsa2 = (RSA)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.RSA);
             rsa2.ImportPem(pem);
@@ -83,6 +85,42 @@ namespace Test
             alg2.ImportPem(pem2);
             alg2.ImportPem(pem3);
             byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
+            byte[] info2 = alg1.ExportKeyInfo(true);
+            byte[] info3 = alg1.ExportKeyInfo(false);
+            alg2.ImportKeyInfo(info1, "12345");
+            alg2.ImportKeyInfo(info2);
+            alg2.ImportKeyInfo(info3);
+        }
+
+        private static void DoEd25519()
+        {
+            Ed25519 alg1 = new Ed25519();
+            Ed25519 alg2 = new Ed25519();
+            string pem1 = alg1.ExportPem(DEKAlgorithmName.BLOWFISH_CBC, "12345");
+            string pem2 = alg1.ExportPem(true);
+            string pem3 = alg1.ExportPem(false);
+            alg2.ImportPem(pem1, "12345");
+            alg2.ImportPem(pem2);
+            alg2.ImportPem(pem3);
+            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand40BitRC4, "12345");
+            byte[] info2 = alg1.ExportKeyInfo(true);
+            byte[] info3 = alg1.ExportKeyInfo(false);
+            alg2.ImportKeyInfo(info1, "12345");
+            alg2.ImportKeyInfo(info2);
+            alg2.ImportKeyInfo(info3);
+        }
+
+        private static void DoEd448()
+        {
+            Ed448 alg1 = new Ed448();
+            Ed448 alg2 = new Ed448();
+            string pem1 = alg1.ExportPem(DEKAlgorithmName.BLOWFISH_CBC, "12345");
+            string pem2 = alg1.ExportPem(true);
+            string pem3 = alg1.ExportPem(false);
+            alg2.ImportPem(pem1, "12345");
+            alg2.ImportPem(pem2);
+            alg2.ImportPem(pem3);
+            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand40BitRC4, "12345");
             byte[] info2 = alg1.ExportKeyInfo(true);
             byte[] info3 = alg1.ExportKeyInfo(false);
             alg2.ImportKeyInfo(info1, "12345");

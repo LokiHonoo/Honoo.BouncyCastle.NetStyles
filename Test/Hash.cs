@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Policy;
 
 namespace Test
 {
@@ -64,14 +65,14 @@ namespace Test
 
         private static void DoAll()
         {
-            List<HashAlgorithmName> hashNames = new List<HashAlgorithmName>(HashAlgorithmName.GetNames());
+            var algorithmNames = new List<HashAlgorithmName>(HashAlgorithmName.GetNames());
             string[] mechanisms = new string[] { "BLAKE2b128", "BLAKE2s128", "SHA512/376", "SHA512/392", "SHA512T504", "Skein224-512" };
             foreach (var mechanism in mechanisms)
             {
                 HashAlgorithmName.TryGetAlgorithmName(mechanism, out HashAlgorithmName algorithmName);
-                hashNames.Add(algorithmName);
+                algorithmNames.Add(algorithmName);
             }
-            foreach (var algorithmName in hashNames)
+            foreach (var algorithmName in algorithmNames)
             {
                 _total++;
                 HashAlgorithm alg = HashAlgorithm.Create(algorithmName);
@@ -81,7 +82,7 @@ namespace Test
                 byte[] hash = net == null ? alg.ComputeHash(_input) : net.ComputeHash(_input);
                 WriteResult(title, hash, alg.ComputeHash(_input));
             }
-            foreach (var algorithmName in hashNames)
+            foreach (var algorithmName in algorithmNames)
             {
                 _total++;
                 HMAC alg = HMAC.Create(algorithmName);

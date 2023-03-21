@@ -1,16 +1,14 @@
-﻿using Honoo.BouncyCastle.Utilities;
-using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Asn1.CryptoPro;
+﻿using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
-using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Utilities;
 using Org.BouncyCastle.X509;
 using System;
 using System.IO;
@@ -21,57 +19,62 @@ namespace Honoo.BouncyCastle
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class GOST3410 : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
+    public sealed class Ed448 : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
     {
         #region Properties
 
-        private const GOST3410CryptoPro DEFAULT_CRYPTO_PRO = GOST3410CryptoPro.GostR3410x94CryptoProA;
-        private const string NAME = "GOST3410";
-        private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(512, 1024, 512) };
-        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.GOST3411;
+        private const string NAME = "Ed448";
+        private readonly byte[] _context;
         private bool _initialized = false;
         private AsymmetricKeyParameter _privateKey = null;
         private AsymmetricKeyParameter _publicKey = null;
+        private Ed448SignatureInstance _signatureInstance = Ed448SignatureInstance.Ed448;
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
         /// <summary>
-        /// Get or set hash algorithm for signature. Legal hash algorithm is hash size more than or equal to 256 bits.
+        /// Ed448 not need hash algorithm. Throw <see cref="NotImplementedException"/> always.
         /// </summary>
-        public HashAlgorithmName HashAlgorithm
+        public HashAlgorithmName HashAlgorithm { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        /// <inheritdoc/>
+        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_signatureInstance);
+
+        /// <summary>
+        /// Represents the signature EdDSA instance (RFC-8032) used in the symmetric algorithm.
+        /// </summary>
+        public Ed448SignatureInstance SignatureInstance
         {
-            get => _hashAlgorithm;
+            get => _signatureInstance;
             set
             {
-                if (value != _hashAlgorithm)
+                if (value != _signatureInstance)
                 {
-                    if (value == null)
-                    {
-                        throw new CryptographicException("This hash algorithm can't be null.");
-                    }
-                    if (value.HashSize < 256)
-                    {
-                        throw new CryptographicException("Legal hash algorithm is hash size more than or equal to 256 bits.");
-                    }
                     _signer = null;
                     _verifier = null;
-                    _hashAlgorithm = value;
+                    _signatureInstance = value;
                 }
             }
         }
-
-        /// <inheritdoc/>
-        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm);
 
         #endregion Properties
 
         #region Construction
 
         /// <summary>
-        /// Initializes a new instance of the GOST3410 class.
+        /// Initializes a new instance of the Ed448 class.
         /// </summary>
-        public GOST3410() : base(NAME, AsymmetricAlgorithmKind.Signature)
+        /// <param name="context">Context using for signature Ed448/Ed448ph instance.</param>
+        public Ed448(byte[] context = null) : base(NAME, AsymmetricAlgorithmKind.Signature)
         {
+            if (context == null || context.Length == 0)
+            {
+                _context = Arrays.EmptyBytes;
+            }
+            else
+            {
+                _context = (byte[])context.Clone();
+            }
         }
 
         #endregion Construction
@@ -79,10 +82,11 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Creates an instance of the algorithm.
         /// </summary>
+        /// <param name="context">Context using for signature Ed25519ctx/Ed25519ph instance.</param>
         /// <returns></returns>
-        public static GOST3410 Create()
+        public static Ed448 Create(byte[] context = null)
         {
-            return new GOST3410();
+            return new Ed448(context);
         }
 
         #region GenerateParameters
@@ -90,27 +94,10 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         public void GenerateParameters()
         {
-            GenerateParameters(DEFAULT_CRYPTO_PRO);
-        }
-
-        /// <summary>
-        /// Renew private key and public key of the algorithm.
-        /// </summary>
-        /// <param name="cryptoPro">Elliptic curve to be uesd.</param>
-        public void GenerateParameters(GOST3410CryptoPro cryptoPro = DEFAULT_CRYPTO_PRO)
-        {
-            //
-            // Gost3410ParametersGenerator with key size created key pair con't be save to pkcs8.
-            //
-            //Gost3410ParametersGenerator parametersGenerator = new Gost3410ParametersGenerator();
-            //parametersGenerator.Init(keySize, procedure, Common.SecureRandom);
-            //Gost3410Parameters parameters = parametersGenerator.GenerateParameters();
-            //Gost3410KeyGenerationParameters generationParameters = new Gost3410KeyGenerationParameters(Common.SecureRandom, parameters);
-
-            var generationParameters = new Gost3410KeyGenerationParameters(Common.SecureRandom, GetCryptoPro(cryptoPro));
-            Gost3410KeyPairGenerator keyPairGenerator = new Gost3410KeyPairGenerator();
-            keyPairGenerator.Init(generationParameters);
-            AsymmetricCipherKeyPair keyPair = keyPairGenerator.GenerateKeyPair();
+            Ed448KeyGenerationParameters parameters = new Ed448KeyGenerationParameters(Common.SecureRandom);
+            Ed448KeyPairGenerator generator = new Ed448KeyPairGenerator();
+            generator.Init(parameters);
+            AsymmetricCipherKeyPair keyPair = generator.GenerateKeyPair();
             _privateKey = keyPair.Private;
             _publicKey = keyPair.Public;
             _signer = null;
@@ -177,22 +164,21 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         public void ImportKeyInfo(byte[] keyInfo)
         {
-            Gost3410PrivateKeyParameters privateKey = null;
-            Gost3410PublicKeyParameters publicKey = null;
+            Ed448PrivateKeyParameters privateKey = null;
+            Ed448PublicKeyParameters publicKey = null;
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             try
             {
                 PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
-                privateKey = (Gost3410PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
-                BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
-                publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
+                privateKey = (Ed448PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                publicKey = privateKey.GeneratePublicKey();
             }
             catch
             {
                 try
                 {
                     SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
-                    publicKey = (Gost3410PublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                    publicKey = (Ed448PublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
                 }
                 catch
                 {
@@ -211,9 +197,8 @@ namespace Honoo.BouncyCastle
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
             PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
-            Gost3410PrivateKeyParameters privateKey = (Gost3410PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
-            BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
-            Gost3410PublicKeyParameters publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
+            Ed448PrivateKeyParameters privateKey = (Ed448PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            Ed448PublicKeyParameters publicKey = privateKey.GeneratePublicKey();
             _privateKey = privateKey;
             _publicKey = publicKey;
             _signer = null;
@@ -226,18 +211,17 @@ namespace Honoo.BouncyCastle
         {
             using (StringReader reader = new StringReader(pem))
             {
-                Gost3410PrivateKeyParameters privateKey = null;
-                Gost3410PublicKeyParameters publicKey;
+                Ed448PrivateKeyParameters privateKey = null;
+                Ed448PublicKeyParameters publicKey;
                 object obj = new PemReader(reader).ReadObject();
-                if (obj.GetType() == typeof(Gost3410PrivateKeyParameters))
+                if (obj.GetType() == typeof(Ed448PrivateKeyParameters))
                 {
-                    privateKey = (Gost3410PrivateKeyParameters)obj;
-                    BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
-                    publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
+                    privateKey = (Ed448PrivateKeyParameters)obj;
+                    publicKey = privateKey.GeneratePublicKey();
                 }
                 else
                 {
-                    publicKey = (Gost3410PublicKeyParameters)obj;
+                    publicKey = (Ed448PublicKeyParameters)obj;
                 }
                 _privateKey = privateKey;
                 _publicKey = publicKey;
@@ -253,9 +237,8 @@ namespace Honoo.BouncyCastle
             using (StringReader reader = new StringReader(pem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
-                Gost3410PrivateKeyParameters privateKey = (Gost3410PrivateKeyParameters)obj;
-                BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
-                Gost3410PublicKeyParameters publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
+                Ed448PrivateKeyParameters privateKey = (Ed448PrivateKeyParameters)obj;
+                Ed448PublicKeyParameters publicKey = privateKey.GeneratePublicKey();
                 _privateKey = privateKey;
                 _publicKey = publicKey;
                 _signer = null;
@@ -333,25 +316,6 @@ namespace Honoo.BouncyCastle
             _signer.BlockUpdate(buffer, offset, length);
         }
 
-        /// <summary>
-        /// Determines whether the specified size is valid for the current algorithm.
-        /// </summary>
-        /// <param name="keySize">Legal key size is more than or equal to 24 bits (8 bits increments).</param>
-        /// <returns></returns>
-        public bool ValidKeySize(int keySize, out string exception)
-        {
-            if (DetectionUtilities.ValidSize(LEGAL_KEY_SIZES, keySize))
-            {
-                exception = string.Empty;
-                return true;
-            }
-            else
-            {
-                exception = "Legal key size 512, 1024 bits.";
-                return false;
-            }
-        }
-
         /// <inheritdoc/>
         public bool VerifyFinal(byte[] signature)
         {
@@ -384,29 +348,22 @@ namespace Honoo.BouncyCastle
 
         internal static AsymmetricAlgorithmName GetAlgorithmName()
         {
-            return new AsymmetricAlgorithmName(NAME, AsymmetricAlgorithmKind.Signature, () => { return new GOST3410(); });
+            return new AsymmetricAlgorithmName(NAME, AsymmetricAlgorithmKind.Signature, () => { return new Ed448(); });
         }
 
-        internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm)
+        internal static SignatureAlgorithmName GetSignatureAlgorithmName(Ed448SignatureInstance instance)
         {
-            return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm),
-                                              () => { return new GOST3410() { HashAlgorithm = hashAlgorithm }; });
+            return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(instance), () => { return new Ed448() { SignatureInstance = instance }; });
         }
 
-        private static DerObjectIdentifier GetCryptoPro(GOST3410CryptoPro cryptoPro)
+        private static string GetSignatureAlgorithmMechanism(Ed448SignatureInstance instance)
         {
-            switch (cryptoPro)
+            switch (instance)
             {
-                case GOST3410CryptoPro.GostR3410x94CryptoProA: return CryptoProObjectIdentifiers.GostR3410x94CryptoProA;
-                case GOST3410CryptoPro.GostR3410x94CryptoProB: return CryptoProObjectIdentifiers.GostR3410x94CryptoProB;
-                case GOST3410CryptoPro.GostR3410x94CryptoProXchA: return CryptoProObjectIdentifiers.GostR3410x94CryptoProXchA;
-                default: throw new CryptographicException("Unsupported crypto pro.");
+                case Ed448SignatureInstance.Ed448: return "Ed448";
+                case Ed448SignatureInstance.Ed448ph: return "Ed448ph";
+                default: throw new CryptographicException("Unsupported signature EdDSA instance (RFC-8032).");
             }
-        }
-
-        private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm)
-        {
-            return $"{hashAlgorithm.Name}with{NAME}";
         }
 
         private void InspectParameters()
@@ -423,8 +380,12 @@ namespace Honoo.BouncyCastle
             {
                 if (_signer == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetDigest();
-                    _signer = new Gost3410DigestSigner(new Gost3410Signer(), digest);
+                    switch (_signatureInstance)
+                    {
+                        case Ed448SignatureInstance.Ed448: _signer = new Ed448Signer(_context); break;
+                        case Ed448SignatureInstance.Ed448ph: _signer = new Ed448phSigner(_context); break;
+                        default: throw new CryptographicException("Unsupported signature EdDSA instance (RFC-8032).");
+                    }
                     _signer.Init(true, _privateKey);
                 }
             }
@@ -432,8 +393,12 @@ namespace Honoo.BouncyCastle
             {
                 if (_verifier == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetDigest();
-                    _verifier = new Gost3410DigestSigner(new Gost3410Signer(), digest);
+                    switch (_signatureInstance)
+                    {
+                        case Ed448SignatureInstance.Ed448: _verifier = new Ed448Signer(_context); break;
+                        case Ed448SignatureInstance.Ed448ph: _verifier = new Ed448phSigner(_context); break;
+                        default: throw new CryptographicException("Unsupported signature EdDSA instance (RFC-8032).");
+                    }
                     _verifier.Init(false, _publicKey);
                 }
             }
