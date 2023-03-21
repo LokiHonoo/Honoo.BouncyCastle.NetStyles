@@ -26,6 +26,21 @@ namespace Honoo.BouncyCastle
         public static SymmetricAlgorithmName Blowfish { get; } = Honoo.BouncyCastle.Blowfish.GetAlgorithmName();
 
         /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size 128, 192, 256 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName Camellia { get; } = Honoo.BouncyCastle.Camellia.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 64 bits. Legal key size 40-128 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName CAST5 { get; } = Honoo.BouncyCastle.CAST5.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size 128-256 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName CAST6 { get; } = Honoo.BouncyCastle.CAST6.GetAlgorithmName();
+
+        /// <summary>
         /// Symmetric block algorithm. Block size 64 bits. Legal key size 64 bits.
         /// </summary>
         public static SymmetricAlgorithmName DES { get; } = Honoo.BouncyCastle.DES.GetAlgorithmName();
@@ -36,14 +51,54 @@ namespace Honoo.BouncyCastle
         public static SymmetricAlgorithmName DESede { get; } = Honoo.BouncyCastle.DESede.GetAlgorithmName();
 
         /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size 128, 256 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName DSTU7624_128 { get; } = DSTU7624.GetAlgorithmName(128);
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 256 bits. Legal key size 256, 512 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName DSTU7624_256 { get; } = DSTU7624.GetAlgorithmName(256);
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 512 bits. Legal key size 512 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName DSTU7624_512 { get; } = DSTU7624.GetAlgorithmName(512);
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 64 bits. Legal key size 256 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName GOST28147 { get; } = Honoo.BouncyCastle.GOST28147.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 64 bits. Legal key size 8-128 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName IDEA { get; } = Honoo.BouncyCastle.IDEA.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size 128 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName Noekeon { get; } = Honoo.BouncyCastle.Noekeon.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 64 bits. Legal key size 8-1024 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName RC2 { get; } = Honoo.BouncyCastle.RC2.GetAlgorithmName();
+
+        /// <summary>
         /// Symmetric block algorithm. Block size 64 bits. Legal key size 8-2040 bits (8 bits increments).
         /// </summary>
-        public static SymmetricAlgorithmName RC5 { get; } = Honoo.BouncyCastle.RC5_32.GetAlgorithmName();
+        public static SymmetricAlgorithmName RC5 { get; } = RC5_32.GetAlgorithmName();
 
         /// <summary>
         /// Symmetric block algorithm. Block size 128 bits. Legal key size 8-2040 bits (8 bits increments).
         /// </summary>
         public static SymmetricAlgorithmName RC5_64 { get; } = Honoo.BouncyCastle.RC5_64.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size is more than or equal to 8 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName RC6 { get; } = Honoo.BouncyCastle.RC6.GetAlgorithmName();
 
         /// <summary>
         /// Symmetric block algorithm. Block size 128 bits. Legal key size 128, 160, 192, 224, 256 bits.
@@ -70,14 +125,114 @@ namespace Honoo.BouncyCastle
         /// </summary>
         public static SymmetricAlgorithmName Rijndael256 { get; } = Rijndael.GetAlgorithmName(256);
 
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size 128 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName SEED { get; } = Honoo.BouncyCastle.SEED.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits.Legal key size 32-512 bits (32 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName Serpent { get; } = Honoo.BouncyCastle.Serpent.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 64 bits. Legal key size 128 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName SKIPJACK { get; } = Honoo.BouncyCastle.SKIPJACK.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size 128 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName SM4 { get; } = Honoo.BouncyCastle.SM4.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 64 bits. Legal key size 128 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName TEA { get; } = Honoo.BouncyCastle.TEA.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 1024 bits. Legal key size 1024 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName Threefish1024 { get; } = Threefish.GetAlgorithmName(1024);
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 256 bits. Legal key size 256 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName Threefish256 { get; } = Threefish.GetAlgorithmName(256);
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 512 bits. Legal key size 512 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName Threefish512 { get; } = Threefish.GetAlgorithmName(512);
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size 32-512 bits (32 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName Tnepres { get; } = Honoo.BouncyCastle.Tnepres.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 128 bits. Legal key size 128, 192, 256 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName Twofish { get; } = Honoo.BouncyCastle.Twofish.GetAlgorithmName();
+
+        /// <summary>
+        /// Symmetric block algorithm. Block size 64 bits. Legal key size 128 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName XTEA { get; } = Honoo.BouncyCastle.XTEA.GetAlgorithmName();
+
         #endregion Block Algorithm Names
 
         #region Stream Algorithm Names
 
         /// <summary>
+        /// ymmetric stream algorithm. Legal key size 128, 256 bits. Legal iv size 64 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName ChaCha { get; } = Honoo.BouncyCastle.ChaCha.GetAlgorithmName();
+
+        /// <summary>
+        /// ymmetric stream algorithm. Legal key size 256 bits. Legal iv size 96 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName ChaCha7539 { get; } = Honoo.BouncyCastle.ChaCha7539.GetAlgorithmName();
+
+        /// <summary>
         /// ymmetric stream algorithm. Legal key size 128 bits. Legal iv size 0-128 bits (8 bits increments).
         /// </summary>
         public static SymmetricAlgorithmName HC128 { get; } = Honoo.BouncyCastle.HC128.GetAlgorithmName();
+
+        /// <summary>
+        /// ymmetric stream algorithm. Legal key size 128, 256 bits. Legal iv size 128-256 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName HC256 { get; } = Honoo.BouncyCastle.HC256.GetAlgorithmName();
+
+        /// <summary>
+        /// ymmetric stream algorithm. Legal key size 64-8192 bits (16 bits increments). Not need iv.
+        /// </summary>
+        public static SymmetricAlgorithmName ISAAC { get; } = Honoo.BouncyCastle.ISAAC.GetAlgorithmName();
+
+        /// <summary>
+        /// ymmetric stream algorithm. Legal key size 256 bits. Not need iv.
+        /// </summary>
+        public static SymmetricAlgorithmName RC4 { get; } = Honoo.BouncyCastle.RC4.GetAlgorithmName();
+
+        /// <summary>
+        /// ymmetric stream algorithm. Legal key size 128, 256 bits. Legal iv size 64 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName Salsa20 { get; } = Honoo.BouncyCastle.Salsa20.GetAlgorithmName();
+
+        /// <summary>
+        /// ymmetric stream algorithm. Legal key size 256 bits. Legal iv size 8-6144 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName VMPC { get; } = Honoo.BouncyCastle.VMPC.GetAlgorithmName();
+
+        /// <summary>
+        /// ymmetric stream algorithm. Legal key size 256 bits. Legal iv size 8-6144 bits (8 bits increments).
+        /// </summary>
+        public static SymmetricAlgorithmName VMPC_KSA3 { get; } = Honoo.BouncyCastle.VMPC_KSA3.GetAlgorithmName();
+
+        /// <summary>
+        /// ymmetric stream algorithm. Legal key size 256 bits. Legal iv size 192 bits.
+        /// </summary>
+        public static SymmetricAlgorithmName XSalsa20 { get; } = Honoo.BouncyCastle.XSalsa20.GetAlgorithmName();
 
         #endregion Stream Algorithm Names
 
@@ -120,7 +275,7 @@ namespace Honoo.BouncyCastle
         #endregion Construction
 
         /// <summary>
-        /// Gets all symmetric algorithm names.
+        /// Gets all symmetric algorithm names of the storage.
         /// </summary>
         /// <returns></returns>
         public static SymmetricAlgorithmName[] GetNames()
@@ -129,49 +284,115 @@ namespace Honoo.BouncyCastle
             {
                 AES,
                 Blowfish,
-                //Camellia,
-                //CAST5,
-                //CAST6,
+                Camellia,
+                CAST5,
+                CAST6,
                 DES,
                 DESede,
-                //DSTU7624_128,
-                //DSTU7624_256,
-                //DSTU7624_512,
-                //GOST28147,
-                //IDEA,
-                //Noekeon,
-                //RC2,
+                DSTU7624_128,
+                DSTU7624_256,
+                DSTU7624_512,
+                GOST28147,
+                IDEA,
+                Noekeon,
+                RC2,
                 RC5,
                 RC5_64,
-                //RC6,
+                RC6,
                 Rijndael128,
                 Rijndael160,
                 Rijndael192,
                 Rijndael224,
                 Rijndael256,
-                //SEED,
-                //Serpent,
-                //SKIPJACK,
-                //SM4,
-                //TEA,
-                //Threefish_256,
-                //Threefish_512,
-                //Threefish_1024,
-                //Tnepres,
-                //Twofish,
-                //XTEA,
+                SEED,
+                Serpent,
+                SKIPJACK,
+                SM4,
+                TEA,
+                Threefish256,
+                Threefish512,
+                Threefish1024,
+                Tnepres,
+                Twofish,
+                XTEA,
 
-                //ChaCha,
-                //ChaCha7539,
+                ChaCha,
+                ChaCha7539,
                 HC128,
-                //HC256,
-                //ISAAC,
-                //RC4,
-                //Salsa20,
-                //VMPC,
-                //VMPC_KSA3,
-                //XSalsa20,
-        };
+                HC256,
+                ISAAC,
+                RC4,
+                Salsa20,
+                VMPC,
+                VMPC_KSA3,
+                XSalsa20,
+            };
+        }
+
+        /// <summary>
+        /// Gets symmetric algorithm names of the storage of the specified kind.
+        /// </summary>
+        /// <param name="kind">Asymmetric algorithm kind.</param>
+        /// <returns></returns>
+        public static SymmetricAlgorithmName[] GetNames(SymmetricAlgorithmKind kind)
+        {
+            switch (kind)
+            {
+                case SymmetricAlgorithmKind.Block:
+                    return new SymmetricAlgorithmName[]
+                    {
+                        AES,
+                        Blowfish,
+                        Camellia,
+                        CAST5,
+                        CAST6,
+                        DES,
+                        DESede,
+                        DSTU7624_128,
+                        DSTU7624_256,
+                        DSTU7624_512,
+                        GOST28147,
+                        IDEA,
+                        Noekeon,
+                        RC2,
+                        RC5,
+                        RC5_64,
+                        RC6,
+                        Rijndael128,
+                        Rijndael160,
+                        Rijndael192,
+                        Rijndael224,
+                        Rijndael256,
+                        SEED,
+                        Serpent,
+                        SKIPJACK,
+                        SM4,
+                        TEA,
+                        Threefish256,
+                        Threefish512,
+                        Threefish1024,
+                        Tnepres,
+                        Twofish,
+                        XTEA,
+                    };
+
+                case SymmetricAlgorithmKind.Stream:
+                    return new SymmetricAlgorithmName[]
+                    {
+                        ChaCha,
+                        ChaCha7539,
+                        HC128,
+                        HC256,
+                        ISAAC,
+                        RC4,
+                        Salsa20,
+                        VMPC,
+                        VMPC_KSA3,
+                        XSalsa20,
+                    };
+
+                default: return GetNames();
+            }
         }
 
         /// <summary>
@@ -192,48 +413,48 @@ namespace Honoo.BouncyCastle
             {
                 case "AES": algorithmName = AES; return true;
                 case "BLOWFISH": algorithmName = Blowfish; return true;
-                //case "CAMELLIA": algorithmName = Camellia; return true;
-                //case "CAST5": algorithmName = CAST5; return true;
-                //case "CAST6": algorithmName = CAST6; return true;
+                case "CAMELLIA": algorithmName = Camellia; return true;
+                case "CAST5": algorithmName = CAST5; return true;
+                case "CAST6": algorithmName = CAST6; return true;
                 case "DES": algorithmName = DES; return true;
                 case "DESEDE": case "DESEDE3": case "TDEA": case "TRIPLEDES": case "3DES": algorithmName = DESede; return true;
-                //case "DSTU7624-128": algorithmName = DSTU7624_128; return true;
-                //case "DSTU7624-256": algorithmName = DSTU7624_256; return true;
-                //case "DSTU7624-512": algorithmName = DSTU7624_512; return true;
-                //case "GOST28147": algorithmName = GOST28147; return true;
-                //case "IDEA": algorithmName = IDEA; return true;
-                //case "NOEKEON": algorithmName = Noekeon; return true;
-                //case "RC2": algorithmName = RC2; return true;
+                case "DSTU7624-128": algorithmName = DSTU7624_128; return true;
+                case "DSTU7624-256": algorithmName = DSTU7624_256; return true;
+                case "DSTU7624-512": algorithmName = DSTU7624_512; return true;
+                case "GOST28147": algorithmName = GOST28147; return true;
+                case "IDEA": algorithmName = IDEA; return true;
+                case "NOEKEON": algorithmName = Noekeon; return true;
+                case "RC2": algorithmName = RC2; return true;
                 case "RC5": case "RC532": algorithmName = RC5; return true;
                 case "RC5-64": algorithmName = RC5_64; return true;
-                //case "RC6": algorithmName = RC6; return true;
+                case "RC6": algorithmName = RC6; return true;
                 case "RIJNDAEL128": case "RIJNDAEL-128": case "RIJNDAEL": algorithmName = Rijndael128; return true;
                 case "RIJNDAEL160": case "RIJNDAEL-160": algorithmName = Rijndael160; return true;
                 case "RIJNDAEL192": case "RIJNDAEL-192": algorithmName = Rijndael192; return true;
                 case "RIJNDAEL224": case "RIJNDAEL-224": algorithmName = Rijndael224; return true;
                 case "RIJNDAEL256": case "RIJNDAEL-256": algorithmName = Rijndael256; return true;
-                //case "SEED": algorithmName = SEED; return true;
-                //case "SERPENT": algorithmName = Serpent; return true;
-                //case "SKIPJACK": algorithmName = SKIPJACK; return true;
-                //case "SM4": algorithmName = SM4; return true;
-                //case "TEA": algorithmName = TEA; return true;
-                //case "THREEFISH256": case "THREEFISH-256":  case "THREEFISH": algorithmName = Threefish_256; return true;
-                //case "THREEFISH512": case "THREEFISH-512": algorithmName = Threefish_512; return true;
-                // case "THREEFISH1024": case "THREEFISH-1024": algorithmName = Threefish_1024; return true;
-                //case "TNEPRES": algorithmName = Tnepres; return true;
-                //case "TWOFISH": algorithmName = Twofish; return true;
-                //case "XTEA": algorithmName = XTEA; return true;
+                case "SEED": algorithmName = SEED; return true;
+                case "SERPENT": algorithmName = Serpent; return true;
+                case "SKIPJACK": algorithmName = SKIPJACK; return true;
+                case "SM4": algorithmName = SM4; return true;
+                case "TEA": algorithmName = TEA; return true;
+                case "THREEFISH256": case "THREEFISH-256": case "THREEFISH": algorithmName = Threefish256; return true;
+                case "THREEFISH512": case "THREEFISH-512": algorithmName = Threefish512; return true;
+                case "THREEFISH1024": case "THREEFISH-1024": algorithmName = Threefish1024; return true;
+                case "TNEPRES": algorithmName = Tnepres; return true;
+                case "TWOFISH": algorithmName = Twofish; return true;
+                case "XTEA": algorithmName = XTEA; return true;
 
-                //case "CHACHA": algorithmName = ChaCha; return true;
-                //case "CHACHA7539": case "CHACHA20": algorithmName = ChaCha7539; return true;
+                case "CHACHA": algorithmName = ChaCha; return true;
+                case "CHACHA7539": case "CHACHA20": algorithmName = ChaCha7539; return true;
                 case "HC128": case "HC-128": algorithmName = HC128; return true;
-                //case "HC256": case "HC-256": algorithmName = HC256; return true;
-                //case "ISAAC": algorithmName = ISAAC; return true;
-                //case "RC4": case "ARC4": case "ARCFOUR": algorithmName = RC4; return true;
-                //case "SALSA20": algorithmName = Salsa20; return true;
-                //case "VMPC": algorithmName = VMPC; return true;
-                //case "VMPC-KSA3": case "VMPCKSA3": algorithmName = VMPC_KSA3; return true;
-                //case "XSALSA20": algorithmName = XSalsa20; return true;
+                case "HC256": case "HC-256": algorithmName = HC256; return true;
+                case "ISAAC": algorithmName = ISAAC; return true;
+                case "RC4": case "ARC4": case "ARCFOUR": algorithmName = RC4; return true;
+                case "SALSA20": algorithmName = Salsa20; return true;
+                case "VMPC": algorithmName = VMPC; return true;
+                case "VMPC-KSA3": case "VMPCKSA3": algorithmName = VMPC_KSA3; return true;
+                case "XSALSA20": algorithmName = XSalsa20; return true;
                 default: algorithmName = null; return false;
             }
         }

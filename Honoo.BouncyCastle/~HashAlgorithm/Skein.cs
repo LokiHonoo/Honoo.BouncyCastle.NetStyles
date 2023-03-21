@@ -12,6 +12,7 @@ namespace Honoo.BouncyCastle
     {
         #region Properties
 
+        private const int DEFAULT_STATE_SIZE = 512;
         private const string NAME = "Skein";
         private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) };
 
@@ -34,15 +35,15 @@ namespace Honoo.BouncyCastle
         /// <param name="hashSize">Legal hash size is greater than or equal to 8 bits (8 bits increments).</param>
         /// <param name="stateSize">Legal state size 256, 512, 1024 bits.</param>
 
-        public Skein(int hashSize, int stateSize = 256) : base($"{NAME}{hashSize}-{stateSize}", hashSize)
+        public Skein(int hashSize, int stateSize = DEFAULT_STATE_SIZE) : base($"{NAME}{hashSize}-{stateSize}", hashSize)
         {
-            if (!DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
+            if (!ValidHashSize(hashSize, out string exception))
             {
-                throw new CryptographicException("Legal hash size is greater than or equal to 8 bits (8 bits increments).");
+                throw new CryptographicException(exception);
             }
-            if (!DetectionUtilities.ValidSize(LEGAL_STATE_SIZES, stateSize))
+            if (!ValidStateSize(stateSize, out exception))
             {
-                throw new CryptographicException("Legal state size 256, 512, 1024 bits.");
+                throw new CryptographicException(exception);
             }
             _stateSize = stateSize;
         }
@@ -55,7 +56,7 @@ namespace Honoo.BouncyCastle
         /// <param name="hashSize">Legal hash size is greater than or equal to 8 bits (8 bits increments).</param>
         /// <param name="stateSize">Legal state size 256, 512, 1024 bits.</param>
         /// <returns></returns>
-        public static Skein Create(int hashSize, int stateSize = 256)
+        public static Skein Create(int hashSize, int stateSize = DEFAULT_STATE_SIZE)
         {
             return new Skein(hashSize, stateSize);
         }
@@ -67,16 +68,34 @@ namespace Honoo.BouncyCastle
                                          () => { return new SkeinDigest(stateSize, hashSize); },
                                          () => { return new Skein(hashSize, stateSize); });
         }
-
-        internal static bool ValidHashSize(int hashSize)
+        internal static bool ValidHashSize(int hashSize, out string exception)
         {
-            return DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize);
+            if (DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
+            {
+                exception = string.Empty;
+                return true;
+            }
+            else
+            {
+                exception = "Legal hash size is greater than or equal to 8 bits (8 bits increments).";
+                return false;
+            }
+        }
+        internal static bool ValidStateSize(int hashSize, out string exception)
+        {
+            if (DetectionUtilities.ValidSize(LEGAL_STATE_SIZES, hashSize))
+            {
+                exception = string.Empty;
+                return true;
+            }
+            else
+            {
+                exception = "Legal state size 256, 512, 1024 bits.";
+                return false;
+            }
         }
 
-        internal static bool ValidStateSize(int stateSize)
-        {
-            return DetectionUtilities.ValidSize(LEGAL_STATE_SIZES, stateSize);
-        }
+
 
         /// <inheritdoc/>
         protected override IDigest GetDigest()

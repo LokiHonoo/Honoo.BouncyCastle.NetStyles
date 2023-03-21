@@ -34,7 +34,10 @@ namespace Honoo.BouncyCastle
         private AsymmetricKeyParameter _publicKey = null;
         private ISigner _signer = null;
         private ISigner _verifier = null;
-        /// <inheritdoc/>
+
+        /// <summary>
+        /// Get or set hash algorithm for signature. Legal hash algorithm is hash size more than or equal to 256 bits.
+        /// </summary>
         public HashAlgorithmName HashAlgorithm
         {
             get => _hashAlgorithm;
@@ -42,9 +45,17 @@ namespace Honoo.BouncyCastle
             {
                 if (value != _hashAlgorithm)
                 {
-                    _hashAlgorithm = value ?? throw new CryptographicException("This parameter can't be null.");
+                    if (value == null)
+                    {
+                        throw new CryptographicException("This hash algorithm can't be null.");
+                    }
+                    if (value.HashSize < 256)
+                    {
+                        throw new CryptographicException("Legal hash algorithm is hash size more than or equal to 256 bits.");
+                    }
                     _signer = null;
                     _verifier = null;
+                    _hashAlgorithm = value;
                 }
             }
         }
@@ -88,8 +99,15 @@ namespace Honoo.BouncyCastle
         /// <param name="cryptoPro">Elliptic curve to be uesd.</param>
         public void GenerateParameters(GOST3410CryptoPro cryptoPro = DEFAULT_CRYPTO_PRO)
         {
-            Gost3410KeyGenerationParameters generationParameters =
-                new Gost3410KeyGenerationParameters(Common.SecureRandom, GetCryptoPro(cryptoPro));
+            //
+            // Gost3410ParametersGenerator with key size created key pair con't be save to pkcs8.
+            //
+            //Gost3410ParametersGenerator parametersGenerator = new Gost3410ParametersGenerator();
+            //parametersGenerator.Init(keySize, procedure, Common.SecureRandom);
+            //Gost3410Parameters parameters = parametersGenerator.GenerateParameters();
+            //Gost3410KeyGenerationParameters generationParameters = new Gost3410KeyGenerationParameters(Common.SecureRandom, parameters);
+
+            var generationParameters = new Gost3410KeyGenerationParameters(Common.SecureRandom, GetCryptoPro(cryptoPro));
             Gost3410KeyPairGenerator keyPairGenerator = new Gost3410KeyPairGenerator();
             keyPairGenerator.Init(generationParameters);
             AsymmetricCipherKeyPair keyPair = keyPairGenerator.GenerateKeyPair();
@@ -275,8 +293,14 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         public void ResetSigner()
         {
-            _signer.Reset();
-            _verifier.Reset();
+            if (_signer != null)
+            {
+                _signer.Reset();
+            }
+            if (_verifier != null)
+            {
+                _verifier.Reset();
+            }
         }
 
         /// <inheritdoc/>
@@ -399,7 +423,7 @@ namespace Honoo.BouncyCastle
             {
                 if (_signer == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetDigest();
+                    IDigest digest = _hashAlgorithm.GetEngine();
                     _signer = new Gost3410DigestSigner(new Gost3410Signer(), digest);
                     _signer.Init(true, _privateKey);
                 }
@@ -408,7 +432,7 @@ namespace Honoo.BouncyCastle
             {
                 if (_verifier == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetDigest();
+                    IDigest digest = _hashAlgorithm.GetEngine();
                     _verifier = new Gost3410DigestSigner(new Gost3410Signer(), digest);
                     _verifier.Init(false, _publicKey);
                 }

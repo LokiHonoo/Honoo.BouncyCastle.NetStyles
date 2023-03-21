@@ -1,4 +1,6 @@
 ﻿using Honoo.BouncyCastle;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
 using System;
 using System.Linq;
 
@@ -84,7 +86,8 @@ namespace Test
             var paddings = (SymmetricPaddingMode[])Enum.GetValues(typeof(SymmetricPaddingMode));
             foreach (var algorithmName in SymmetricAlgorithmName.GetNames())
             {
-                var alg1 = SymmetricAlgorithm.Create(algorithmName);
+                SymmetricAlgorithmName.TryGetAlgorithmName(algorithmName.Name, out SymmetricAlgorithmName algorithmName2);
+                var alg1 = SymmetricAlgorithm.Create(algorithmName2);
                 var alg2 = SymmetricAlgorithm.Create(algorithmName);
                 if (algorithmName.Kind == SymmetricAlgorithmKind.Block)
                 {
@@ -143,13 +146,43 @@ namespace Test
                             alg1.Padding = padding;
                             alg1.GenerateParameters();
                             alg1.ExportParameters(out byte[] key, out byte[] iv);
-                            alg2.Mode = mode;
-                            alg2.Padding = padding;
-                            alg2.ImportParameters(key, iv);
                             alg1.EncryptFinal(input);
                             byte[] enc = alg1.EncryptFinal(input);
-                            alg2.DecryptFinal(enc);
-                            byte[] dec = alg2.DecryptFinal(enc);
+                            //
+                            byte[] dec;
+                            IBufferedCipher cipher = null;
+                            try
+                            {
+                                cipher = Org.BouncyCastle.Security.CipherUtilities.GetCipher($"{alg1.Name}/{mode}/{padding}");
+                            }
+                            catch { }
+                            if (cipher == null)
+                            {
+                                alg2.Mode = mode;
+                                alg2.Padding = padding;
+                                alg2.ImportParameters(key, iv);
+                                alg2.DecryptFinal(enc);
+                                dec = alg2.DecryptFinal(enc);
+                            }
+                            else
+                            {
+                                ICipherParameters para;
+                                if (alg1.Name == "RC5" || alg1.Name == "RC5-64")
+                                {
+                                    para = new RC5Parameters(key, 12);
+                                }
+                                else
+                                {
+                                    para = new KeyParameter(key);
+                                }
+                                if (iv != null)
+                                {
+                                    para = new ParametersWithIV(para, iv);
+                                }
+                                cipher.Init(false, para);
+                                dec = cipher.DoFinal(enc);
+                            }
+
                             WriteResult(title, input, enc, dec);
                         }
                     }
@@ -183,7 +216,7 @@ namespace Test
                SymmetricCipherMode.ECB,
                //SymmetricCipherMode.OFB,
                SymmetricCipherMode.CFB,
-               //SymmetricCipherMode.CTS
+               //SymmetricCipherMode.CTS,
             };
             var modes2 = new System.Security.Cryptography.CipherMode[]
             {
@@ -191,7 +224,7 @@ namespace Test
                System.Security.Cryptography.CipherMode.ECB,
                //System.Security.Cryptography.CipherMode.OFB,
                System.Security.Cryptography.CipherMode.CFB,
-               //System.Security.Cryptography.CipherMode.CTS
+               //System.Security.Cryptography.CipherMode.CTS,
             };
             var paddings1 = new SymmetricPaddingMode[]
             {
@@ -199,7 +232,7 @@ namespace Test
                 SymmetricPaddingMode.PKCS7,
                 //SymmetricPaddingMode.Zeros,
                 SymmetricPaddingMode.X923,
-                SymmetricPaddingMode.ISO10126
+                SymmetricPaddingMode.ISO10126,
             };
             var paddings2 = new System.Security.Cryptography.PaddingMode[]
             {
@@ -207,7 +240,7 @@ namespace Test
                 System.Security.Cryptography.PaddingMode.PKCS7,
                 //System.Security.Cryptography.PaddingMode.Zeros,
                 System.Security.Cryptography.PaddingMode.ANSIX923,
-                System.Security.Cryptography.PaddingMode.ISO10126
+                System.Security.Cryptography.PaddingMode.ISO10126,
             };
             for (int i = 0; i < names1.Length; i++)
             {

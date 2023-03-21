@@ -41,47 +41,66 @@ namespace Test
 
         private static void Demo2()
         {
-            HMAC hmac = HMAC.Create(HashAlgorithmName.BLAKE2b256);
-            hmac.GenerateParameters(224);
-            _ = hmac.ComputeHash(_input);
+            HMAC hmac1 = HMAC.Create(HashAlgorithmName.BLAKE2b256);
+            hmac1.GenerateParameters(224); // Any length.
+            hmac1.ExportParameters(out byte[] key);
+            _ = hmac1.ComputeHash(_input);
+            HMAC hmac2 = HMAC.Create(HashAlgorithmName.BLAKE2b256);
+            hmac2.ImportParameters(key);
+            _ = hmac2.ComputeHash(_input);
         }
 
         private static void Demo3()
         {
-            CMAC cmac = CMAC.Create(SymmetricAlgorithmName.AES);
-            cmac.GenerateParameters(192);
-            _ = cmac.ComputeHash(_input);
+            CMAC cmac1 = CMAC.Create(SymmetricAlgorithmName.AES);
+            // 192 = AES legal key size bits.
+            cmac1.GenerateParameters(192);
+            cmac1.ExportParameters(out byte[] key);
+            _ = cmac1.ComputeHash(_input);
+            CMAC cmac2 = CMAC.Create(SymmetricAlgorithmName.AES);
+            cmac2.ImportParameters(key);
+            _ = cmac2.ComputeHash(_input);
         }
 
         private static void Demo4()
         {
-            MAC mac = MAC.Create(SymmetricAlgorithmName.Rijndael224);
-            mac.Mode = SymmetricCipherMode.CBC;
-            mac.Padding = SymmetricPaddingMode.TBC;
-            mac.GenerateParameters(160, 224);
-            _ = mac.ComputeHash(_input);
+            MAC mac1 = MAC.Create(SymmetricAlgorithmName.Rijndael224);
+            mac1.Mode = SymmetricCipherMode.CBC;
+            mac1.Padding = SymmetricPaddingMode.TBC;
+            // 160 = Rijndael legal key size bits.
+            // 224 = CBC mode limit same as Rijndael block size bits.
+            mac1.GenerateParameters(160, 224);
+            mac1.ExportParameters(out byte[] key, out byte[] iv);
+            _ = mac1.ComputeHash(_input);
+            MAC mac2 = MAC.Create(SymmetricAlgorithmName.Rijndael224);
+            mac2.ImportParameters(key, iv);
+            _ = mac2.ComputeHash(_input);
         }
 
         private static void DoAll()
         {
-            List<HashAlgorithmName> hashNames = new List<HashAlgorithmName>(HashAlgorithmName.GetNames());
+            var algorithmNames = new List<HashAlgorithmName>(HashAlgorithmName.GetNames());
             string[] mechanisms = new string[] { "BLAKE2b128", "BLAKE2s128", "SHA512/376", "SHA512/392", "SHA512T504", "Skein224-512" };
             foreach (var mechanism in mechanisms)
             {
                 HashAlgorithmName.TryGetAlgorithmName(mechanism, out HashAlgorithmName algorithmName);
-                hashNames.Add(algorithmName);
+                algorithmNames.Add(algorithmName);
             }
-            foreach (var algorithmName in hashNames)
+            foreach (var algorithmName in algorithmNames)
             {
+                if (algorithmName.Name.StartsWith("Skein"))
+                {
+                }
                 _total++;
-                HashAlgorithm alg = HashAlgorithm.Create(algorithmName);
+                HashAlgorithmName.TryGetAlgorithmName(algorithmName.Name, out HashAlgorithmName algorithmName2);
+                HashAlgorithm alg = HashAlgorithm.Create(algorithmName2);
                 string title = $"{alg.Name}/{alg.HashSize}";
                 alg.ComputeHash(_input);
-                var net = System.Security.Cryptography.HashAlgorithm.Create(algorithmName.Name);
+                var net = System.Security.Cryptography.HashAlgorithm.Create(algorithmName2.Name);
                 byte[] hash = net == null ? alg.ComputeHash(_input) : net.ComputeHash(_input);
                 WriteResult(title, hash, alg.ComputeHash(_input));
             }
-            foreach (var algorithmName in hashNames)
+            foreach (var algorithmName in algorithmNames)
             {
                 _total++;
                 HMAC alg = HMAC.Create(algorithmName);

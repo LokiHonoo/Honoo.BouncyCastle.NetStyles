@@ -107,18 +107,6 @@ namespace Honoo.BouncyCastle
             return unsigned ? pmsA.ToByteArrayUnsigned() : pmsA.ToByteArray();
         }
 
-        /// <inheritdoc/>
-        public string ExportPem(bool includePrivate)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            throw new NotImplementedException();
-        }
-
         void IKeyExchangeA.GenerateParameters()
         {
             GenerateParameters(DEFAULT_KEY_SIZE, DEFAULT_CERTAINTY);
@@ -171,18 +159,6 @@ namespace Honoo.BouncyCastle
 
         /// <inheritdoc/>
         public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public void ImportPem(string pem)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public void ImportPem(string pem, string password)
         {
             throw new NotImplementedException();
         }

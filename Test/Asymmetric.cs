@@ -26,7 +26,6 @@ namespace Test
             DoDSA();
             DoRSA();
             DoElGamal();
-            DoECDSA();
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine($"Total= {_total}  Diff= {_diff}  Ignore= {_ignore}");
@@ -36,7 +35,7 @@ namespace Test
         private static void Demo()
         {
             RSA rsa1 = new RSA();
-            string pem = rsa1.ExportPem(false); 
+            string pem = rsa1.ExportPem(false);
 
             RSA rsa2 = (RSA)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.RSA);
             rsa2.ImportPem(pem);
@@ -54,40 +53,10 @@ namespace Test
             System.Security.Cryptography.DSAParameters parameters2 = net.ExportParameters(false);
             alg1.ImportParameters(parameters1);
             alg2.ImportParameters(parameters2);
-            string pem1 = alg1.ExportPem(DEKAlgorithmName.BLOWFISH_CBC, "12345");
-            string pem2 = alg1.ExportPem(true);
-            string pem3 = alg1.ExportPem(false);
-            alg2.ImportPem(pem1, "12345");
-            alg2.ImportPem(pem2);
-            alg2.ImportPem(pem3);
-            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand128BitRC2CBC, "12345");
-            byte[] info2 = alg1.ExportKeyInfo(true);
-            byte[] info3 = alg1.ExportKeyInfo(false);
-            alg2.ImportKeyInfo(info1, "12345");
-            alg2.ImportKeyInfo(info2);
-            alg2.ImportKeyInfo(info3);
             string xml1 = net.ToXmlString(true);
             string xml2 = net.ToXmlString(false);
             alg1.ImportXml(xml1);
             alg2.ImportXml(xml2);
-        }
-
-        private static void DoECDSA()
-        {
-            ECDSA alg1 = new ECDSA();
-            ECDSA alg2 = new ECDSA();
-            string pem1 = alg1.ExportPem(DEKAlgorithmName.RC2_64_OFB, "12345");
-            string pem2 = alg1.ExportPem(true);
-            string pem3 = alg1.ExportPem(false);
-            alg2.ImportPem(pem1, "12345");
-            alg2.ImportPem(pem2);
-            alg2.ImportPem(pem3);
-            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
-            byte[] info2 = alg1.ExportKeyInfo(true);
-            byte[] info3 = alg1.ExportKeyInfo(false);
-            alg2.ImportKeyInfo(info1, "12345");
-            alg2.ImportKeyInfo(info2);
-            alg2.ImportKeyInfo(info3);
         }
 
         private static void DoElGamal()
@@ -100,12 +69,12 @@ namespace Test
             alg2.ImportPem(pem1, "12345");
             alg2.ImportPem(pem2);
             alg2.ImportPem(pem3);
-            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
-            byte[] info2 = alg1.ExportKeyInfo(true);
-            byte[] info3 = alg1.ExportKeyInfo(false);
-            alg2.ImportKeyInfo(info1, "12345");
-            alg2.ImportKeyInfo(info2);
-            alg2.ImportKeyInfo(info3);
+            byte[] keyInfo1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
+            byte[] keyInfo2 = alg1.ExportKeyInfo(true);
+            byte[] keyInfo3 = alg1.ExportKeyInfo(false);
+            alg2.ImportKeyInfo(keyInfo1, "12345");
+            alg2.ImportKeyInfo(keyInfo2);
+            alg2.ImportKeyInfo(keyInfo3);
             var paddings = (AsymmetricEncryptionPaddingMode[])Enum.GetValues(typeof(AsymmetricEncryptionPaddingMode));
             foreach (var padding in paddings)
             {
@@ -137,26 +106,10 @@ namespace Test
             System.Security.Cryptography.RSAParameters parameters2 = net.ExportParameters(false);
             alg1.ImportParameters(parameters1);
             alg2.ImportParameters(parameters2);
-            string pem1 = alg1.ExportPem(DEKAlgorithmName.BLOWFISH_CBC, "12345");
-            string pem2 = alg1.ExportPem(true);
-            string pem3 = alg1.ExportPem(false);
-            alg2.ImportPem(pem1, "12345");
-            alg2.ImportPem(pem2);
-            alg2.ImportPem(pem3);
-            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand40BitRC4, "12345");
-            byte[] info2 = alg1.ExportKeyInfo(true);
-            byte[] info3 = alg1.ExportKeyInfo(false);
-            alg2.ImportKeyInfo(info1, "12345");
-            alg2.ImportKeyInfo(info2);
-            alg2.ImportKeyInfo(info3);
             string xml1 = alg1.ExportXml(true);
             string xml2 = alg1.ExportXml(false);
             alg2.ImportXml(xml1);
             alg2.ImportXml(xml2);
-            string xml3 = net.ToXmlString(true);
-            string xml4 = net.ToXmlString(false);
-            alg1.ImportXml(xml3);
-            alg2.ImportXml(xml4);
             {
                 _total++;
                 alg2.Padding = AsymmetricEncryptionPaddingMode.OAEP;

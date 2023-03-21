@@ -18,17 +18,17 @@ namespace Honoo.BouncyCastle
         private readonly int _defaultKeySize;
 
         /// <summary>
-        /// Gets legal iv size bits.
+        /// Gets legal iv size bits. The value maybe 'null' if the the cipher mode does not apply to the algorithm.
         /// </summary>
         public override KeySizes[] LegalIVSizes => GetLegalIVSizes();
 
         /// <summary>
-        /// Gets legal mac size bits.
+        /// Gets legal mac size bits. The value maybe 'null' if the the cipher mode not a aead mode.
         /// </summary>
         public KeySizes[] LegalMacSizes => GetLegalMacSizes();
 
         /// <summary>
-        /// Gets legal nonce size bits.
+        /// Gets legal nonce size bits. The value maybe 'null' if the the cipher mode not a aead mode.
         /// </summary>
         public KeySizes[] LegalNonceSizes => GetLegalIVSizes();
 

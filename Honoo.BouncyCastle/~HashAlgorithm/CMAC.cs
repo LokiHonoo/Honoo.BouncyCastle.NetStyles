@@ -12,10 +12,10 @@ namespace Honoo.BouncyCastle
     {
         #region Properties
 
+        private readonly SymmetricBlockAlgorithm _core;
         private readonly int _hashSize;
         private readonly int _macSize;
         private readonly string _name;
-        private readonly SymmetricBlockAlgorithm _symmetricAlgorithm;
         private IMac _digest;
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Gets key size bits.
         /// </summary>
-        public int KeySize => _symmetricAlgorithm.KeySize;
+        public int KeySize => _core.KeySize;
 
         /// <summary>
         /// Gets mac size bits.
@@ -46,6 +46,14 @@ namespace Honoo.BouncyCastle
         /// Initializes a new instance of the CMAC class.
         /// </summary>
         /// <param name="algorithmName">Symmetric block algorithm name. Legal algorithms of block size 64 or 128 bits.</param>
+        public CMAC(SymmetricAlgorithmName algorithmName) : this(algorithmName, algorithmName.BlockSize)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the CMAC class.
+        /// </summary>
+        /// <param name="algorithmName">Symmetric block algorithm name. Legal algorithms of block size 64 or 128 bits.</param>
         /// <param name="macSize">Legal mac size is between 8 and symmetric algorithm block size bits (8 bits increments).</param>
         public CMAC(SymmetricAlgorithmName algorithmName, int macSize)
         {
@@ -58,9 +66,9 @@ namespace Honoo.BouncyCastle
                 throw new CryptographicException($"Legal mac size is between 8 and {algorithmName.BlockSize} bits (8 bits increments).");
             }
             _name = $"{algorithmName.Name}/CMAC";
-            _symmetricAlgorithm = (SymmetricBlockAlgorithm)SymmetricAlgorithm.Create(algorithmName);
-            _symmetricAlgorithm.Mode = SymmetricCipherMode.ECB;
-            _symmetricAlgorithm.Padding = SymmetricPaddingMode.NoPadding;
+            _core = (SymmetricBlockAlgorithm)SymmetricAlgorithm.Create(algorithmName);
+            _core.Mode = SymmetricCipherMode.ECB;
+            _core.Padding = SymmetricPaddingMode.NoPadding;
             _macSize = macSize;
             _hashSize = macSize;
         }
@@ -74,7 +82,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public static CMAC Create(SymmetricAlgorithmName algorithmName)
         {
-            return new CMAC(algorithmName, algorithmName.BlockSize);
+            return new CMAC(algorithmName);
         }
 
         /// <summary>
@@ -135,10 +143,11 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Exports key.
         /// </summary>
+        /// <param name="key">Output key bytes.</param>
         /// <returns></returns>
-        public byte[] ExportParameters()
+        public void ExportParameters(out byte[] key)
         {
-            return ((KeyParameter)_symmetricAlgorithm.ExportParameters()).GetKey();
+            key = ((KeyParameter)_core.ExportParameters()).GetKey();
         }
 
         /// <summary>
@@ -146,7 +155,7 @@ namespace Honoo.BouncyCastle
         /// </summary>
         public void GenerateParameters()
         {
-            _symmetricAlgorithm.GenerateParameters();
+            _core.GenerateParameters();
             _digest = null;
         }
 
@@ -156,7 +165,7 @@ namespace Honoo.BouncyCastle
         /// <param name="keySize">Legal key size is determined by the symmetric algorithm.</param>
         public void GenerateParameters(int keySize)
         {
-            _symmetricAlgorithm.GenerateParameters(keySize, 0);
+            _core.GenerateParameters(keySize, 0);
             _digest = null;
         }
 
@@ -166,7 +175,7 @@ namespace Honoo.BouncyCastle
         /// <param name="key">Legal key size is determined by the symmetric algorithm.</param>
         public void ImportParameters(byte[] key)
         {
-            _symmetricAlgorithm.ImportParameters(key, null);
+            _core.ImportParameters(key, null);
             _digest = null;
         }
 
@@ -210,13 +219,13 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public bool ValidKeySize(int keySize, out string exception)
         {
-            return _symmetricAlgorithm.ValidKeySize(keySize, out exception);
+            return _core.ValidKeySize(keySize, out exception);
         }
 
         private IMac GetDigest()
         {
-            IMac digest = new CMac(_symmetricAlgorithm.GetEngine(), _macSize);
-            digest.Init(_symmetricAlgorithm.ExportParameters());
+            IMac digest = new CMac(_core.GetEngine(), _macSize);
+            digest.Init(_core.ExportParameters());
             return digest;
         }
     }

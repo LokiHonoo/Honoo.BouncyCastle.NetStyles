@@ -23,10 +23,9 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Initializes a new instance of the GOST3411 class.
         /// </summary>
-        /// <param name="substitutionBox">Substitution box.</param>
-        public GOST3411(byte[] substitutionBox = null) : base(NAME, HASH_SIZE)
+        public GOST3411() : base(NAME, HASH_SIZE)
         {
-            _substitutionBox = substitutionBox;
+            _substitutionBox = null;
         }
 
         /// <summary>
@@ -43,11 +42,10 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Creates an instance of the algorithm.
         /// </summary>
-        /// <param name="substitutionBox">Substitution box.</param>
         /// <returns></returns>
-        public static GOST3411 Create(byte[] substitutionBox = null)
+        public static GOST3411 Create()
         {
-            return new GOST3411(substitutionBox);
+            return new GOST3411();
         }
 
         /// <summary>

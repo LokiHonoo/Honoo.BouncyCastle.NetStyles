@@ -12,6 +12,7 @@ namespace Honoo.BouncyCastle
     {
         #region Properties
 
+        private const int DEFAULT_KEY_SIZE = 256;
         private const SymmetricAlgorithmKind KIND = SymmetricAlgorithmKind.Block;
         private const string NAME = "Rijndael";
         private static readonly KeySizes[] LEGAL_BLOCK_SIZES = new KeySizes[] { new KeySizes(128, 256, 32) };
@@ -30,7 +31,7 @@ namespace Honoo.BouncyCastle
         /// Initializes a new instance of the Rijndael class.
         /// </summary>
         /// <param name="blockSize">Legal block size 128, 160, 192, 224, 256 bits.</param>
-        public Rijndael(int blockSize) : base($"{NAME}{blockSize}", blockSize, blockSize)
+        public Rijndael(int blockSize) : base($"{NAME}{blockSize}", blockSize, DEFAULT_KEY_SIZE)
         {
             if (!DetectionUtilities.ValidSize(LEGAL_BLOCK_SIZES, blockSize))
             {

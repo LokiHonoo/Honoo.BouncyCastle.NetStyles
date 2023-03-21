@@ -25,9 +25,9 @@ namespace Honoo.BouncyCastle
         /// <param name="hashSize">Legal hash size 224-376 bits (8 bits increments), 392-504 bits (8 bits increments).</param>
         public SHA512T(int hashSize) : base($"{NAME}{hashSize}", hashSize)
         {
-            if (!DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
+            if (!ValidHashSize(hashSize, out string exception))
             {
-                throw new CryptographicException("Legal hash size 224-376 bits (8 bits increments), 392-504 bits (8 bits increments).");
+                throw new CryptographicException(exception);
             }
         }
 
@@ -51,9 +51,18 @@ namespace Honoo.BouncyCastle
                                          () => { return new SHA512T(hashSize); });
         }
 
-        internal static bool ValidHashSize(int hashSize)
+        internal static bool ValidHashSize(int hashSize, out string exception)
         {
-            return DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize);
+            if (DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
+            {
+                exception = string.Empty;
+                return true;
+            }
+            else
+            {
+                exception = "Legal hash size 224-376 bits (8 bits increments), 392-504 bits (8 bits increments).";
+                return false;
+            }
         }
 
         /// <inheritdoc/>

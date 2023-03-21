@@ -56,6 +56,23 @@ namespace Honoo.BouncyCastle
         #endregion Construction
 
         /// <summary>
+        /// Gets all PBE algorithm names of the storage.
+        /// </summary>
+        /// <returns></returns>
+        public static PBEAlgorithmName[] GetNames()
+        {
+            return new PBEAlgorithmName[]
+            {
+                PBEwithSHAand128BitRC2CBC,
+                PBEwithSHAand128BitRC4,
+                PBEwithSHAand2KeyDESedeCBC,
+                PBEwithSHAand3KeyDESedeCBC,
+                PBEwithSHAand40BitRC2CBC,
+                PBEwithSHAand40BitRC4,
+            };
+        }
+
+        /// <summary>
         /// Determines whether the specified object is equal to the current object.
         /// </summary>
         /// <param name="other"></param>

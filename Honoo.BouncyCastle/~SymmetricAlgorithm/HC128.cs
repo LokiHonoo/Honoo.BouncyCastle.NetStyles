@@ -20,7 +20,7 @@ namespace Honoo.BouncyCastle
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(128, 128, 0) };
 
         /// <summary>
-        /// Gets legal iv size bits. Legal IV size 0-128 bits (8 bits increments).
+        /// Gets legal iv size bits. Legal iv size 0-128 bits (8 bits increments).
         /// </summary>
         public override KeySizes[] LegalIVSizes => (KeySizes[])LEGAL_IV_SIZES.Clone();
 
@@ -61,7 +61,7 @@ namespace Honoo.BouncyCastle
             }
             else
             {
-                exception = "Legal IV size 0-128 bits (8 bits increments).";
+                exception = "Legal iv size 0-128 bits (8 bits increments).";
                 return false;
             }
         }

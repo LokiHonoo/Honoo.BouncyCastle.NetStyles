@@ -15,7 +15,7 @@ namespace Honoo.BouncyCastle
 
         private const int DEFAULT_KEY_SIZE = 128;
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) };
-        private readonly HashAlgorithmName _hashAlgorithm;
+        private readonly IDigest _core;
         private readonly int _hashSize;
         private readonly string _name;
         private IMac _digest;
@@ -42,22 +42,15 @@ namespace Honoo.BouncyCastle
 
         #region Construction
 
-        internal HMAC(HashAlgorithm hashAlgorithm)
-        {
-            HashAlgorithmName.TryGetAlgorithmName(hashAlgorithm.Name, out _hashAlgorithm);
-            _name = $"{hashAlgorithm.Name}/HMAC";
-            _hashSize = hashAlgorithm.HashSize;
-        }
-
         /// <summary>
         /// Initializes a new instance of the HMAC class.
         /// </summary>
         /// <param name="algorithmName">Hash algorithm name.</param>
-        private HMAC(HashAlgorithmName algorithmName)
+        public HMAC(HashAlgorithmName algorithmName)
         {
-            _hashAlgorithm = algorithmName;
             _name = $"{algorithmName.Name}/HMAC";
             _hashSize = algorithmName.HashSize;
+            _core = algorithmName.GetEngine();
         }
 
         #endregion Construction
@@ -224,7 +217,7 @@ namespace Honoo.BouncyCastle
 
         private IMac GetDigest()
         {
-            IMac digest = new HMac(_hashAlgorithm.GetDigest());
+            IMac digest = new HMac(_core);
             digest.Init(_parameters);
             return digest;
         }

@@ -105,9 +105,9 @@ namespace Honoo.BouncyCastle
             {
                 if (value != _hashAlgorithm)
                 {
-                    _hashAlgorithm = value ?? throw new CryptographicException("This parameter can't be null.");
                     _signer = null;
                     _verifier = null;
+                    _hashAlgorithm = value ?? throw new CryptographicException("This hash algorithm can't be null.");
                 }
             }
         }
@@ -616,8 +616,14 @@ namespace Honoo.BouncyCastle
         /// <inheritdoc/>
         public void ResetSigner()
         {
-            _signer.Reset();
-            _verifier.Reset();
+            if (_signer != null)
+            {
+                _signer.Reset();
+            }
+            if (_verifier != null)
+            {
+                _verifier.Reset();
+            }
         }
 
         /// <inheritdoc/>
@@ -738,15 +744,15 @@ namespace Honoo.BouncyCastle
                     }
                     else if (hash == null)
                     {
-                        cipher = new OaepEncoding(cipher, null, mgf1.GetDigest(), null);
+                        cipher = new OaepEncoding(cipher, null, mgf1.GetEngine(), null);
                     }
                     else if (mgf1 == null)
                     {
-                        cipher = new OaepEncoding(cipher, hash.GetDigest(), null, null);
+                        cipher = new OaepEncoding(cipher, hash.GetEngine(), null, null);
                     }
                     else
                     {
-                        cipher = new OaepEncoding(cipher, hash.GetDigest(), mgf1.GetDigest(), null);
+                        cipher = new OaepEncoding(cipher, hash.GetEngine(), mgf1.GetEngine(), null);
                     }
                     break;
 
@@ -784,7 +790,7 @@ namespace Honoo.BouncyCastle
             {
                 if (_signer == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetDigest();
+                    IDigest digest = _hashAlgorithm.GetEngine();
                     switch (_signaturePadding)
                     {
                         case RSASignaturePaddingMode.PKCS1: _signer = new RsaDigestSigner(digest); break;
@@ -800,7 +806,7 @@ namespace Honoo.BouncyCastle
             {
                 if (_verifier == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetDigest();
+                    IDigest digest = _hashAlgorithm.GetEngine();
                     switch (_signaturePadding)
                     {
                         case RSASignaturePaddingMode.PKCS1: _verifier = new RsaDigestSigner(digest); break;

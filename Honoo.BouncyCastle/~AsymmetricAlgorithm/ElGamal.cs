@@ -456,15 +456,15 @@ namespace Honoo.BouncyCastle
                     }
                     else if (hash == null)
                     {
-                        cipher = new OaepEncoding(cipher, null, mgf1.GetDigest(), null);
+                        cipher = new OaepEncoding(cipher, null, mgf1.GetEngine(), null);
                     }
                     else if (mgf1 == null)
                     {
-                        cipher = new OaepEncoding(cipher, hash.GetDigest(), null, null);
+                        cipher = new OaepEncoding(cipher, hash.GetEngine(), null, null);
                     }
                     else
                     {
-                        cipher = new OaepEncoding(cipher, hash.GetDigest(), mgf1.GetDigest(), null);
+                        cipher = new OaepEncoding(cipher, hash.GetEngine(), mgf1.GetEngine(), null);
                     }
                     break;
 

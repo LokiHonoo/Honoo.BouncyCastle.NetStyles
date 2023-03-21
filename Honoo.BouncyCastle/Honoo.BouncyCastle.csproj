@@ -11,8 +11,8 @@
 		<AssemblyOriginatorKeyFile>Honoo.BouncyCastle.snk</AssemblyOriginatorKeyFile>
 		<Description>BouncyCastle's helpers. Refactoring by System.Security.Cryptography code styles.</Description>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://github.com/LokiHonoo/Honoo.BouncyCastle.Helpers</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/LokiHonoo/Honoo.BouncyCastle.Helpers</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/LokiHonoo/Honoo.BouncyCastle</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/LokiHonoo/Honoo.BouncyCastle</RepositoryUrl>
 		<PackageTags>Honoo BouncyCastle</PackageTags>
 		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 		<RootNamespace>Honoo.BouncyCastle</RootNamespace>

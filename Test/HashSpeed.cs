@@ -22,7 +22,6 @@ namespace Test
                 stopwatch.Stop();
                 Console.WriteLine(".NET SHA256 Compute source 13KiB 10000 times : " + stopwatch.ElapsedMilliseconds + " milliseconds");
             }
-            //
             {
                 SHA256 algorithm = new SHA256();
                 stopwatch.Restart();

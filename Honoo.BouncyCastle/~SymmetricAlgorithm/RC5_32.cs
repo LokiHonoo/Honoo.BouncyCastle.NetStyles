@@ -14,7 +14,7 @@ namespace Honoo.BouncyCastle
         #region Properties
 
         private const int BLOCK_SIZE = 64;
-        private const int DEFAULT_KEY_SIZE = 128;
+        private const int DEFAULT_KEY_SIZE = 256;
         private const SymmetricAlgorithmKind KIND = SymmetricAlgorithmKind.Block;
         private const string NAME = "RC5";
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(8, 2040, 8) };

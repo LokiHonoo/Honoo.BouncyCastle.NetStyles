@@ -31,9 +31,9 @@ namespace Honoo.BouncyCastle
         /// <param name="personalization">Personalization need null or less than 8 bytes.</param>
         public BLAKE2s(int hashSize, byte[] key = null, byte[] salt = null, byte[] personalization = null) : base($"{NAME}{hashSize}", hashSize)
         {
-            if (!DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
+            if (!ValidHashSize(hashSize, out string exception))
             {
-                throw new CryptographicException("Legal hash size 8-256 bits (8 bits increments).");
+                throw new CryptographicException(exception);
             }
             if (key != null && key.Length != 32)
             {
@@ -75,9 +75,18 @@ namespace Honoo.BouncyCastle
                                          () => { return new BLAKE2s(hashSize); });
         }
 
-        internal static bool ValidHashSize(int hashSize)
+        internal static bool ValidHashSize(int hashSize, out string exception)
         {
-            return DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize);
+            if (DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))
+            {
+                exception = string.Empty;
+                return true;
+            }
+            else
+            {
+                exception = "Legal hash size 8-256 bits (8 bits increments).";
+                return false;
+            }
         }
 
         /// <inheritdoc/>

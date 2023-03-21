@@ -186,7 +186,7 @@ namespace Honoo.BouncyCastle
         #endregion Construction
 
         /// <summary>
-        /// Gets all asymmetric algorithm names.
+        /// Gets all asymmetric algorithm names of the storage.
         /// </summary>
         /// <returns></returns>
         public static SignatureAlgorithmName[] GetNames()
@@ -325,11 +325,11 @@ namespace Honoo.BouncyCastle
                 case "1.2.156.10197.1.503": case "SHA256WITHSM2": case "SHA-256WITHSM2": algorithmName = SHA256withSM2; return true;
                 case "1.2.156.10197.1.501": case "SM3WITHSM2": algorithmName = SM3withSM2; return true;
 
-                //case "ED25519": algorithmName = new Ed25519(); return true;
-                //case "ED25519CTX": algorithmName = new Ed25519ctx(); return true;
-                //case "ED25519PH": algorithmName = new Ed25519ph(); return true;
-                //case "ED448": algorithmName = new Ed448(); return true;
-                //case "ED448PH": algorithmName = new Ed448ph(); return true;
+                case "ED25519": algorithmName = Ed25519.GetSignatureAlgorithmName(Ed25519SignatureInstance.Ed25519); return true;
+                case "ED25519CTX": algorithmName = Ed25519.GetSignatureAlgorithmName(Ed25519SignatureInstance.Ed25519ctx); return true;
+                case "ED25519PH": algorithmName = Ed25519.GetSignatureAlgorithmName(Ed25519SignatureInstance.Ed25519ph); return true;
+                case "ED448": algorithmName = Ed448.GetSignatureAlgorithmName(Ed448SignatureInstance.Ed448); return true;
+                case "ED448PH": algorithmName = Ed448.GetSignatureAlgorithmName(Ed448SignatureInstance.Ed448ph); return true;
 
                 default: break;
             }

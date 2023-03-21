@@ -37,7 +37,7 @@ namespace Honoo.BouncyCastle
 
         internal static HashAlgorithmName GetAlgorithmName()
         {
-            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new MD5Digest(); }, () => { return new MD4(); });
+            return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new MD4Digest(); }, () => { return new MD4(); });
         }
 
         /// <inheritdoc/>

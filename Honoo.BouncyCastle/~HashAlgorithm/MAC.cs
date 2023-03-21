@@ -13,10 +13,10 @@ namespace Honoo.BouncyCastle
     {
         #region Properties
 
+        private readonly SymmetricBlockAlgorithm _core;
         private readonly int _hashSize;
         private readonly int _macSize;
         private readonly string _name;
-        private readonly SymmetricBlockAlgorithm _symmetricAlgorithm;
         private IMac _digest;
 
         /// <summary>
@@ -27,12 +27,12 @@ namespace Honoo.BouncyCastle
         /// <summary>
         /// Gets iv size bits.
         /// </summary>
-        public int IVSize => _symmetricAlgorithm.IVSize;
+        public int IVSize => _core.IVSize;
 
         /// <summary>
         /// Gets key size bits.
         /// </summary>
-        public int KeySize => _symmetricAlgorithm.KeySize;
+        public int KeySize => _core.KeySize;
 
         /// <summary>
         /// Gets mac size bits.
@@ -45,14 +45,14 @@ namespace Honoo.BouncyCastle
         /// </summary>
         public SymmetricCipherMode Mode
         {
-            get => _symmetricAlgorithm.Mode;
+            get => _core.Mode;
             set
             {
-                if (value != _symmetricAlgorithm.Mode)
+                if (value != _core.Mode)
                 {
                     _digest = null;
                 }
-                _symmetricAlgorithm.Mode = value;
+                _core.Mode = value;
             }
         }
 
@@ -67,20 +67,28 @@ namespace Honoo.BouncyCastle
         /// </summary>
         public SymmetricPaddingMode Padding
         {
-            get => _symmetricAlgorithm.Padding;
+            get => _core.Padding;
             set
             {
-                if (value != _symmetricAlgorithm.Padding)
+                if (value != _core.Padding)
                 {
                     _digest = null;
                 }
-                _symmetricAlgorithm.Padding = value;
+                _core.Padding = value;
             }
         }
 
         #endregion Properties
 
         #region Construction
+
+        /// <summary>
+        /// Initializes a new instance of the MAC class.
+        /// </summary>
+        /// <param name="algorithmName">Symmetric block algorithm name.</param>
+        public MAC(SymmetricAlgorithmName algorithmName) : this(algorithmName, algorithmName.BlockSize)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the MAC class.
@@ -98,9 +106,9 @@ namespace Honoo.BouncyCastle
                 throw new CryptographicException($"Legal mac size is between 8 and {algorithmName.BlockSize} bits (8 bits increments).");
             }
             _name = $"{algorithmName.Name}/MAC";
-            _symmetricAlgorithm = (SymmetricBlockAlgorithm)SymmetricAlgorithm.Create(algorithmName);
-            _symmetricAlgorithm.Mode = SymmetricCipherMode.CBC;
-            _symmetricAlgorithm.Padding = SymmetricPaddingMode.PKCS7;
+            _core = (SymmetricBlockAlgorithm)SymmetricAlgorithm.Create(algorithmName);
+            _core.Mode = SymmetricCipherMode.CBC;
+            _core.Padding = SymmetricPaddingMode.PKCS7;
             _macSize = macSize;
             _hashSize = macSize;
         }
@@ -114,7 +122,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public static MAC Create(SymmetricAlgorithmName algorithmName)
         {
-            return new MAC(algorithmName, algorithmName.BlockSize);
+            return new MAC(algorithmName);
         }
 
         /// <summary>
@@ -180,7 +188,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public void ExportParameters(out byte[] key, out byte[] iv)
         {
-            var parameters = ((ParametersWithIV)_symmetricAlgorithm.ExportParameters());
+            var parameters = ((ParametersWithIV)_core.ExportParameters());
             key = ((KeyParameter)parameters.Parameters).GetKey();
             iv = parameters.GetIV();
         }
@@ -190,7 +198,7 @@ namespace Honoo.BouncyCastle
         /// </summary>
         public void GenerateParameters()
         {
-            _symmetricAlgorithm.GenerateParameters();
+            _core.GenerateParameters();
             _digest = null;
         }
 
@@ -201,7 +209,7 @@ namespace Honoo.BouncyCastle
         /// <param name="ivSize">Legal iv size is determined by the symmetric algorithm and cipher mode.</param>
         public void GenerateParameters(int keySize, int ivSize)
         {
-            _symmetricAlgorithm.GenerateParameters(keySize, ivSize);
+            _core.GenerateParameters(keySize, ivSize);
             _digest = null;
         }
 
@@ -212,7 +220,7 @@ namespace Honoo.BouncyCastle
         /// <param name="iv">Legal iv size is determined by the symmetric algorithm and cipher mode.</param>
         public void ImportParameters(byte[] key, byte[] iv)
         {
-            _symmetricAlgorithm.ImportParameters(key, iv);
+            _core.ImportParameters(key, iv);
             _digest = null;
         }
 
@@ -256,7 +264,7 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public bool ValidIVSize(int ivSize, out string exception)
         {
-            return _symmetricAlgorithm.ValidIVSize(ivSize, out exception);
+            return _core.ValidIVSize(ivSize, out exception);
         }
 
         /// <summary>
@@ -267,13 +275,13 @@ namespace Honoo.BouncyCastle
         /// <returns></returns>
         public bool ValidKeySize(int keySize, out string exception)
         {
-            return _symmetricAlgorithm.ValidKeySize(keySize, out exception);
+            return _core.ValidKeySize(keySize, out exception);
         }
 
         private IMac GetDigest()
         {
             IBlockCipherPadding pad;
-            switch (_symmetricAlgorithm.Padding)
+            switch (_core.Padding)
             {
                 case SymmetricPaddingMode.NoPadding: pad = null; break;
                 case SymmetricPaddingMode.PKCS7: pad = SymmetricPadding.PKCS7_PADDING; break;
@@ -284,22 +292,22 @@ namespace Honoo.BouncyCastle
                 default: throw new CryptographicException("MAC only supported NoPadding, PKCS7, Zeros, X923, ISO7816-4 and TBC padding mode.");
             }
             IMac digest;
-            switch (_symmetricAlgorithm.Mode)
+            switch (_core.Mode)
             {
                 case SymmetricCipherMode.CBC:
-                    digest = pad == null ? new CbcBlockCipherMac(_symmetricAlgorithm.GetEngine(), _macSize)
-                        : new CbcBlockCipherMac(_symmetricAlgorithm.GetEngine(), _macSize, pad);
+                    digest = pad == null ? new CbcBlockCipherMac(_core.GetEngine(), _macSize)
+                        : new CbcBlockCipherMac(_core.GetEngine(), _macSize, pad);
                     break;
 
                 case SymmetricCipherMode.CFB:
-                    int cfbs = _symmetricAlgorithm.IVSize;
-                    digest = pad == null ? new CfbBlockCipherMac(_symmetricAlgorithm.GetEngine(), cfbs, _macSize)
-                        : new CfbBlockCipherMac(_symmetricAlgorithm.GetEngine(), cfbs, _macSize, pad);
+                    int cfbs = _core.IVSize;
+                    digest = pad == null ? new CfbBlockCipherMac(_core.GetEngine(), cfbs, _macSize)
+                        : new CfbBlockCipherMac(_core.GetEngine(), cfbs, _macSize, pad);
                     break;
 
                 default: throw new CryptographicException("MAC only supported CBC and CFB cipher mode.");
             }
-            digest.Init(_symmetricAlgorithm.ExportParameters());
+            digest.Init(_core.ExportParameters());
             return digest;
         }
     }
