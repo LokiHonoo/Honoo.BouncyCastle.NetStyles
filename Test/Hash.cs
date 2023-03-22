@@ -110,6 +110,8 @@ namespace Test
                 HMACName.TryGetAlgorithmName(algorithmName.Name, out HMACName algorithmName2);
                 HMAC alg = HMAC.Create(algorithmName2);
                 alg.GenerateParameters(112);
+                var param = alg.ExportParameters();
+                alg.ImportParameters(param);
                 alg.ComputeFinal(_input);
                 var net = System.Security.Cryptography.HMAC.Create($"HMAC{algorithmName}");
                 byte[] hash;
@@ -131,6 +133,8 @@ namespace Test
                 CMACName.TryGetAlgorithmName(algorithmName.Name, out CMACName algorithmName2);
                 CMAC alg = CMAC.Create(algorithmName2, algorithmName.BlockSize / 2);
                 alg.GenerateParameters();
+                var param = alg.ExportParameters();
+                alg.ImportParameters(param);
                 alg.ComputeFinal(_input);
                 WriteResult(alg.Name, alg.HashSize, alg.ComputeFinal(_input), alg.ComputeFinal(_input));
             }
@@ -140,6 +144,8 @@ namespace Test
                 MACName.TryGetAlgorithmName(algorithmName.Name, out MACName algorithmName2);
                 MAC alg = MAC.Create(algorithmName2, algorithmName.BlockSize / 2);
                 alg.GenerateParameters();
+                var param = alg.ExportParameters();
+                alg.ImportParameters(param);
                 alg.ComputeFinal(_input);
                 WriteResult(alg.Name, alg.HashSize, alg.ComputeFinal(_input), alg.ComputeFinal(_input));
             }

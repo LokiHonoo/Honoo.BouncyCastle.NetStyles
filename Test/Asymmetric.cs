@@ -66,18 +66,26 @@ namespace Test
             DSA alg2 = new DSA();
             System.Security.Cryptography.DSAParameters parameters1 = net.ExportParameters(true);
             System.Security.Cryptography.DSAParameters parameters2 = net.ExportParameters(false);
-            alg1.ImportParameters(parameters1);
-            alg2.ImportParameters(parameters2);
+            alg1.ImportNetParameters(parameters1);
+            alg2.ImportNetParameters(parameters2);
             string xml1 = net.ToXmlString(true);
             string xml2 = net.ToXmlString(false);
             alg1.ImportXml(xml1);
             alg2.ImportXml(xml2);
+            var pirKey = alg1.ExportParameters(true);
+            var pubKey = alg1.ExportParameters(false);
+            alg2.ImportParameters(pirKey);
+            alg2.ImportParameters(pubKey);
         }
 
         private static void DoElGamal()
         {
             ElGamal alg1 = new ElGamal();
             ElGamal alg2 = new ElGamal();
+            var pirKey = alg1.ExportParameters(true);
+            var pubKey = alg1.ExportParameters(false);
+            alg2.ImportParameters(pirKey);
+            alg2.ImportParameters(pubKey);
             string pem1 = alg1.ExportPem(DEKAlgorithmName.RC2_40_CFB, "12345");
             string pem2 = alg1.ExportPem(true);
             string pem3 = alg1.ExportPem(false);
@@ -119,8 +127,12 @@ namespace Test
             RSA alg2 = new RSA();
             System.Security.Cryptography.RSAParameters parameters1 = net.ExportParameters(true);
             System.Security.Cryptography.RSAParameters parameters2 = net.ExportParameters(false);
-            alg1.ImportParameters(parameters1);
-            alg2.ImportParameters(parameters2);
+            alg1.ImportNetParameters(parameters1);
+            alg2.ImportNetParameters(parameters2);
+            var pirKey = alg1.ExportParameters(true);
+            var pubKey = alg1.ExportParameters(false);
+            alg2.ImportParameters(pirKey);
+            alg2.ImportParameters(pubKey);
             string xml1 = alg1.ExportXml(true);
             string xml2 = alg1.ExportXml(false);
             alg2.ImportXml(xml1);

@@ -10,7 +10,6 @@ using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -30,10 +29,7 @@ namespace Honoo.BouncyCastle.NetStyles
         private const string NAME = "DSA";
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(512, 1024, 64) };
         private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
-        private bool _initialized = false;
         private int _keySize = DEFAULT_KEY_SIZE;
-        private AsymmetricKeyParameter _privateKey = null;
-        private AsymmetricKeyParameter _publicKey = null;
         private DSASignatureEncodingMode _signatureEncoding = DSASignatureEncodingMode.Standard;
         private ISigner _signer = null;
         private ISigner _verifier = null;
@@ -127,7 +123,7 @@ namespace Honoo.BouncyCastle.NetStyles
         #region GenerateParameters
 
         /// <inheritdoc/>
-        public void GenerateParameters()
+        public override void GenerateParameters()
         {
             GenerateParameters(DEFAULT_KEY_SIZE, DEFAULT_CERTAINTY);
         }
@@ -148,9 +144,9 @@ namespace Honoo.BouncyCastle.NetStyles
                 throw new CryptographicException("Legal certainty is more than 0.");
             }
             DsaParametersGenerator parametersGenerator = new DsaParametersGenerator();
-            parametersGenerator.Init(keySize, certainty, Common.SecureRandom);
+            parametersGenerator.Init(keySize, certainty, Common.SecureRandom.Value);
             DsaParameters parameters = parametersGenerator.GenerateParameters();
-            DsaKeyGenerationParameters generationParameters = new DsaKeyGenerationParameters(Common.SecureRandom, parameters);
+            DsaKeyGenerationParameters generationParameters = new DsaKeyGenerationParameters(Common.SecureRandom.Value, parameters);
             DsaKeyPairGenerator keyPairGenerator = new DsaKeyPairGenerator();
             keyPairGenerator.Init(generationParameters);
             AsymmetricCipherKeyPair keyPair = keyPairGenerator.GenerateKeyPair();
@@ -167,67 +163,15 @@ namespace Honoo.BouncyCastle.NetStyles
         #region Export/Import Parameters
 
         /// <inheritdoc/>
-        public byte[] ExportKeyInfo(bool includePrivate)
-        {
-            InspectParameters();
-            if (includePrivate)
-            {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(_privateKey);
-                return privateKeyInfo.GetEncoded();
-            }
-            else
-            {
-                SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(_publicKey);
-                return publicKeyInfo.GetEncoded();
-            }
-        }
-
-        /// <inheritdoc/>
-        public byte[] ExportKeyInfo(PBEAlgorithmName pbeAlgorithmName, string password)
-        {
-            InspectParameters();
-            byte[] salt = new byte[16];
-            Common.SecureRandom.NextBytes(salt);
-            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
-                pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
-            return enc.GetEncoded();
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(bool includePrivate)
-        {
-            InspectParameters();
-            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(asymmetricKey);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            InspectParameters();
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo)
+        public override void ImportKeyInfo(byte[] keyInfo)
         {
             DsaPrivateKeyParameters privateKey = null;
             DsaPublicKeyParameters publicKey = null;
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             try
             {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
-                privateKey = (DsaPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                PrivateKeyInfo priInfo = PrivateKeyInfo.GetInstance(asn1);
+                privateKey = (DsaPrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
                 BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
                 publicKey = new DsaPublicKeyParameters(y, privateKey.Parameters);
             }
@@ -235,8 +179,8 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 try
                 {
-                    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
-                    publicKey = (DsaPublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                    SubjectPublicKeyInfo pubInfo = SubjectPublicKeyInfo.GetInstance(asn1);
+                    publicKey = (DsaPublicKeyParameters)PublicKeyFactory.CreateKey(pubInfo);
                 }
                 catch
                 {
@@ -251,12 +195,12 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo, string password)
+        public override void ImportKeyInfo(byte[] privateKeyInfo, string password)
         {
-            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            Asn1Object asn1 = Asn1Object.FromByteArray(privateKeyInfo);
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
-            DsaPrivateKeyParameters privateKey = (DsaPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            PrivateKeyInfo priInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
+            DsaPrivateKeyParameters privateKey = (DsaPrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
             BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
             DsaPublicKeyParameters publicKey = new DsaPublicKeyParameters(y, privateKey.Parameters);
             _privateKey = privateKey;
@@ -271,7 +215,7 @@ namespace Honoo.BouncyCastle.NetStyles
         /// Imports a <see cref="DSAParameters"/> that represents asymmetric algorithm key information.
         /// </summary>
         /// <param name="parameters">A <see cref="DSAParameters"/> that represents an asymmetric algorithm key.</param>
-        public void ImportParameters(DSAParameters parameters)
+        public void ImportNetParameters(DSAParameters parameters)
         {
             DsaPrivateKeyParameters privateKey = null;
             DsaPublicKeyParameters publicKey;
@@ -294,9 +238,45 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem)
+        public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
         {
-            using (StringReader reader = new StringReader(pem))
+            DsaPrivateKeyParameters privateKey = null;
+            DsaPublicKeyParameters publicKey;
+            if (asymmetricKey.IsPrivate)
+            {
+                privateKey = (DsaPrivateKeyParameters)asymmetricKey;
+                BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
+                publicKey = new DsaPublicKeyParameters(y, privateKey.Parameters);
+            }
+            else
+            {
+                publicKey = (DsaPublicKeyParameters)asymmetricKey;
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Parameters.P.BitLength;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportParameters(AsymmetricCipherKeyPair keyPair)
+        {
+            DsaPrivateKeyParameters privateKey = (DsaPrivateKeyParameters)keyPair.Private;
+            DsaPublicKeyParameters publicKey = (DsaPublicKeyParameters)keyPair.Public;
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Parameters.P.BitLength;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportPem(string keyPem)
+        {
+            using (StringReader reader = new StringReader(keyPem))
             {
                 DsaPrivateKeyParameters privateKey = null;
                 DsaPublicKeyParameters publicKey;
@@ -321,9 +301,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem, string password)
+        public override void ImportPem(string privateKeyPem, string password)
         {
-            using (StringReader reader = new StringReader(pem))
+            using (StringReader reader = new StringReader(privateKeyPem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
                 AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair)obj;
@@ -504,7 +484,7 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm, DSASignatureEncodingMode signatureEncoding)
         {
             return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm, signatureEncoding),
-                                              () => { return new DSA() { HashAlgorithm = hashAlgorithm, SignatureEncoding = signatureEncoding }; });
+                                              () => { return new DSA() { _hashAlgorithm = hashAlgorithm, _signatureEncoding = signatureEncoding }; });
         }
 
         private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm, DSASignatureEncodingMode signatureEncoding)
@@ -517,14 +497,6 @@ namespace Honoo.BouncyCastle.NetStyles
                 default: throw new CryptographicException("Unsupported signature padding mode.");
             }
             return $"{hashAlgorithm.Name}with{NAME}";
-        }
-
-        private void InspectParameters()
-        {
-            if (!_initialized)
-            {
-                GenerateParameters();
-            }
         }
 
         private void InspectSigner(bool forSigning)

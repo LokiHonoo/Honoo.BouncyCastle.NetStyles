@@ -18,7 +18,6 @@
     - [Signature](#signature)
     - [Certificate](#certificate)
     - [ECDH](#ecdh)
-  - [BUG](#bug)
   - [LICENSE](#license)
 
 <!-- /code_chunk_output -->
@@ -67,10 +66,7 @@ private static void Demo2()
     byte[] key = new byte[66]; // Any length.
     Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
     hmac1.ImportParameters(key);
-    _ = hmac1.ComputeHash(_input);
-    HMAC hmac2 = HMAC.Create(HMACName.HMAC_SM3);
-    hmac2.ImportParameters(key);
-    _ = hmac2.ComputeHash(_input);
+    _ = hmac1.ComputeFinal(_input);
 }
 
 ```
@@ -85,10 +81,7 @@ private static void Demo3()
     byte[] key = new byte[192 / 8]; // 192 = AES legal key size bits.
     Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
     cmac1.ImportParameters(key);
-    _ = cmac1.ComputeHash(_input);
-    CMAC cmac2 = CMAC.Create(CMACName.AES_CMAC);
-    cmac2.ImportParameters(key);
-    _ = cmac2.ComputeHash(_input);
+    _ = cmac1.ComputeFinal(_input);
 }
 
 ```
@@ -102,15 +95,12 @@ private static void Demo4()
     MAC mac1 = MAC.Create(MACName.Rijndael224_MAC);
     mac1.Mode = SymmetricCipherMode.CBC;
     mac1.Padding = SymmetricPaddingMode.TBC;
-    byte[] key = new byte[160 / 8];  // 160 = Rijndael legal key size bits.
-    byte[] iv = new byte[224 / 8];   // 224 = CBC mode limit same as Rijndael block size bits.
+    byte[] key = new byte[160 / 8];  // 160 = Rijndael224 legal key size bits.
+    byte[] iv = new byte[224 / 8];   // 224 = CBC mode limit same as Rijndael224 block size bits.
     Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
     Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
     mac1.ImportParameters(key, iv);
-    _ = mac1.ComputeHash(_input);
-    MAC mac2 = MAC.Create(MACName.Rijndael224_MAC);
-    mac2.ImportParameters(key, iv);
-    _ = mac2.ComputeHash(_input);
+    _ = mac1.ComputeFinal(_input);
 }
 
 ```
@@ -189,14 +179,15 @@ private static void Demo()
 {
     ECDSA alg1 = (ECDSA)AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA);
     string pem = alg1.ExportPem(false);
+    byte[] signature = alg1.SignFinal(_input);
+
     if (SignatureAlgorithmName.TryGetAlgorithmName("sha256withecdsa", out SignatureAlgorithmName name))
     {
         IAsymmetricSignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
         alg2.ImportPem(pem);
 
-        byte[] signature = alg1.SignFinal(_input);
         alg2.VerifyUpdate(_input);
-        _ = alg2.VerifyFinal(signature);
+        bool same = alg2.VerifyFinal(signature);
     }
 }
 
@@ -205,6 +196,86 @@ private static void Demo()
 ### Certificate
 
 ```c#
+
+private static void CreateCACert()
+{
+    //
+    // Issuer work, Create CA private key and self sign certificate.
+    //
+    _issuerSignatureAlgorithm = SignatureAlgorithmName.SHA256withECDSA;
+    AsymmetricAlgorithm issuerAlgorithm = AsymmetricAlgorithm.Create(_issuerSignatureAlgorithm);
+    byte[] issuerPrivateKeyInfo = issuerAlgorithm.ExportKeyInfo(true);
+    X509CertificateRequestGenerator issuerCsrGenerator = new X509CertificateRequestGenerator(_issuerSignatureAlgorithm, issuerPrivateKeyInfo);
+    issuerCsrGenerator.SubjectDN.Add(X509NameLabel.C, "CN");
+    issuerCsrGenerator.SubjectDN.Add(X509NameLabel.CN, "Test CA");
+    string issuerCsr = issuerCsrGenerator.GeneratePem();
+    X509CertificateV3Generator v3Generator = new X509CertificateV3Generator(_issuerSignatureAlgorithm, issuerPrivateKeyInfo);
+    v3Generator.IssuerDN.Add(X509NameLabel.C, "CN");
+    v3Generator.IssuerDN.Add(X509NameLabel.CN, "Test CA");
+    v3Generator.SetCertificateRequest(issuerCsr);
+    _issuerCer = v3Generator.Generate(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(365));
+    _issuerPrivateKeyInfo = issuerPrivateKeyInfo;
+}
+
+private static void CreateUserCert()
+{
+    //
+    // Issuer work, Create key for subject.
+    //
+    SignatureAlgorithmName userSignatureAlgorithm = SignatureAlgorithmName.SM3withSM2; //Issuer define of allow user specify.
+    AsymmetricAlgorithm issuerCreateAlgorithmForSubject = AsymmetricAlgorithm.Create(userSignatureAlgorithm);
+    string algorithmMechanism = userSignatureAlgorithm.Oid; // Send to user
+    byte[] userPrivateKeyInfo = issuerCreateAlgorithmForSubject.ExportKeyInfo(true); // Send to user
+    Org.BouncyCastle.Crypto.AsymmetricKeyParameter userPublicKey = issuerCreateAlgorithmForSubject.ExportParameters(false);
+
+    //
+    // User work, Create certificate request.
+    //
+    SignatureAlgorithmName.TryGetAlgorithmName(algorithmMechanism, out SignatureAlgorithmName userAlgorithmName);
+    X509CertificateRequestGenerator userCreateCsr = new X509CertificateRequestGenerator(userAlgorithmName, userPrivateKeyInfo);
+    userCreateCsr.SubjectDN.Add(X509NameLabel.C, "CN");
+    userCreateCsr.SubjectDN.Add(X509NameLabel.CN, "Test Subject Porject Name");
+    userCreateCsr.SubjectDN.Add(X509NameLabel.EmailAddress, "abc999@test111222.com");
+    var asn1 = new DerOctetString(new BasicConstraints(true));
+    userCreateCsr.Extensions.Add(X509ExtensionLabel.BasicConstraints, new X509Extension(true, asn1));
+    byte[] csrPem = userCreateCsr.GenerateDer(); // Send to issuer
+
+    //
+    // Issuer work, Load certificate request and create certificate.
+    //
+    X509CertificateV3Generator v3generator = new X509CertificateV3Generator(_issuerSignatureAlgorithm, _issuerPrivateKeyInfo);
+    v3generator.IssuerDN.Add(X509NameLabel.C, "CN");
+    v3generator.IssuerDN.Add(X509NameLabel.CN, "Test CA Sign");
+    var asn2 = new DerOctetString(new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.DataEncipherment));
+    v3generator.Extensions.Add(X509ExtensionLabel.KeyUsage, new X509Extension(true, asn2));
+    v3generator.SetCertificateRequest(csrPem);
+    if (v3generator.CertificateRequest.Verify(userPublicKey))
+    {
+        v3generator.CertificateRequest.SubjectDN.Remove(X509NameLabel.EmailAddress);
+    }
+    byte[] userCer = v3generator.GenerateDer(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(99));
+
+    //
+    // User work, Verify.
+    //
+    File.WriteAllBytes("userCer.cer", userCer);
+    var userCerBC = new Org.BouncyCastle.X509.X509Certificate(userCer);
+    var userCerNET = new System.Security.Cryptography.X509Certificates.X509Certificate2(userCer);
+    try
+    {
+        userCerBC.Verify(_issuerCer.GetPublicKey());
+        Console.WriteLine($"Verify user certificate by CA certificate - true");
+    }
+    catch (Exception)
+    {
+        Console.WriteLine($"Verify user certificate by CA certificate - false");
+    }
+    Console.WriteLine();
+    Console.WriteLine(userCerBC);
+    Console.WriteLine();
+    Console.WriteLine(userCerNET);
+    Console.ReadKey(true);
+}
 
 ```
 
@@ -239,17 +310,6 @@ private static void Demo()
 }
 
 ```
-
-## BUG
-
-BouncyCastle 1.9.0 has not been fixed
-
-1. RC5-32, RC5-64 does not support KeyParameter, only RC5Parameters. (feature?)
-2. GCM cipher mode cannot be auto resue. The algorithm instance needs to be recreated every time.
-3. GOFB cipher mode N3, N4 value omitted at reset. The cipher instance needs to be recreated every time.
-4. OCB cipher mode supported null(0) iv size but BouncyCastle cannot set that.
-5. The signature algorithm SHA256withECDSA points to SHA224withECDSA at Org.BouncyCastle.Cms.DefaultSignatureAlgorithmIdentifierFinder.
-6. SM2Signer does not reset the hash algorithm automatically. must be Reset() manually.
 
 ## LICENSE
 

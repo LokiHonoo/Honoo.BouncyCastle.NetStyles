@@ -3,7 +3,6 @@ using Org.BouncyCastle.Asn1.CryptoPro;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.Rosstandart;
 using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -12,7 +11,6 @@ using Org.BouncyCastle.Math.EC.Multiplier;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -29,9 +27,6 @@ namespace Honoo.BouncyCastle.NetStyles
         private const ECGOST3410EllipticCurve DEFAULT_CURVE = ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_A;
         private const string NAME = "ECGOST3410";
         private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.GOST3411;
-        private bool _initialized = false;
-        private AsymmetricKeyParameter _privateKey = null;
-        private AsymmetricKeyParameter _publicKey = null;
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
@@ -97,7 +92,7 @@ namespace Honoo.BouncyCastle.NetStyles
         #region GenerateParameters
 
         /// <inheritdoc/>
-        public void GenerateParameters()
+        public override void GenerateParameters()
         {
             GenerateParameters(DEFAULT_CURVE);
         }
@@ -108,9 +103,7 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <param name="ellipticCurve">Elliptic curve to be uesd.</param>
         public void GenerateParameters(ECGOST3410EllipticCurve ellipticCurve = DEFAULT_CURVE)
         {
-            X9ECParameters x9Parameters = GetX9ECParameters(ellipticCurve);
-            ECDomainParameters domainParameters = new ECDomainParameters(x9Parameters);
-            ECKeyGenerationParameters generationParameters = new ECKeyGenerationParameters(domainParameters, Common.SecureRandom);
+            ECKeyGenerationParameters generationParameters = new ECKeyGenerationParameters(GetNamedOid(ellipticCurve), Common.SecureRandom.Value);
             ECKeyPairGenerator generator = new ECKeyPairGenerator();
             generator.Init(generationParameters);
             AsymmetricCipherKeyPair keyPair = generator.GenerateKeyPair();
@@ -126,67 +119,15 @@ namespace Honoo.BouncyCastle.NetStyles
         #region Export/Import Parameters
 
         /// <inheritdoc/>
-        public byte[] ExportKeyInfo(bool includePrivate)
-        {
-            InspectParameters();
-            if (includePrivate)
-            {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(_privateKey);
-                return privateKeyInfo.GetEncoded();
-            }
-            else
-            {
-                SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(_publicKey);
-                return publicKeyInfo.GetEncoded();
-            }
-        }
-
-        /// <inheritdoc/>
-        public byte[] ExportKeyInfo(PBEAlgorithmName pbeAlgorithmName, string password)
-        {
-            InspectParameters();
-            byte[] salt = new byte[16];
-            Common.SecureRandom.NextBytes(salt);
-            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
-                pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
-            return enc.GetEncoded();
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(bool includePrivate)
-        {
-            InspectParameters();
-            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(asymmetricKey);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            InspectParameters();
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo)
+        public override void ImportKeyInfo(byte[] keyInfo)
         {
             ECPrivateKeyParameters privateKey = null;
             ECPublicKeyParameters publicKey = null;
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             try
             {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
-                privateKey = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                PrivateKeyInfo priInfo = PrivateKeyInfo.GetInstance(asn1);
+                privateKey = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
                 var q = new FixedPointCombMultiplier().Multiply(privateKey.Parameters.G, privateKey.D);
                 publicKey = new ECPublicKeyParameters(privateKey.AlgorithmName, q, privateKey.Parameters);
             }
@@ -194,8 +135,8 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 try
                 {
-                    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
-                    publicKey = (ECPublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                    SubjectPublicKeyInfo pubInfo = SubjectPublicKeyInfo.GetInstance(asn1);
+                    publicKey = (ECPublicKeyParameters)PublicKeyFactory.CreateKey(pubInfo);
                 }
                 catch
                 {
@@ -209,12 +150,12 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo, string password)
+        public override void ImportKeyInfo(byte[] privateKeyInfo, string password)
         {
-            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            Asn1Object asn1 = Asn1Object.FromByteArray(privateKeyInfo);
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
-            ECPrivateKeyParameters privateKey = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            PrivateKeyInfo priInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
+            ECPrivateKeyParameters privateKey = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
             var q = new FixedPointCombMultiplier().Multiply(privateKey.Parameters.G, privateKey.D);
             ECPublicKeyParameters publicKey = new ECPublicKeyParameters(privateKey.AlgorithmName, q, privateKey.Parameters);
             _privateKey = privateKey;
@@ -225,9 +166,43 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem)
+        public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
         {
-            using (StringReader reader = new StringReader(pem))
+            ECPrivateKeyParameters privateKey = null;
+            ECPublicKeyParameters publicKey;
+            if (asymmetricKey.IsPrivate)
+            {
+                privateKey = (ECPrivateKeyParameters)asymmetricKey;
+                var q = new FixedPointCombMultiplier().Multiply(privateKey.Parameters.G, privateKey.D);
+                publicKey = new ECPublicKeyParameters(privateKey.AlgorithmName, q, privateKey.Parameters);
+            }
+            else
+            {
+                publicKey = (ECPublicKeyParameters)asymmetricKey;
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportParameters(AsymmetricCipherKeyPair keyPair)
+        {
+            ECPrivateKeyParameters privateKey = (ECPrivateKeyParameters)keyPair.Private;
+            ECPublicKeyParameters publicKey = (ECPublicKeyParameters)keyPair.Public;
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportPem(string keyPem)
+        {
+            using (StringReader reader = new StringReader(keyPem))
             {
                 ECPrivateKeyParameters privateKey = null;
                 ECPublicKeyParameters publicKey;
@@ -241,7 +216,7 @@ namespace Honoo.BouncyCastle.NetStyles
                 else
                 {
                     publicKey = (ECPublicKeyParameters)obj;
-                }
+                }              
                 _privateKey = privateKey;
                 _publicKey = publicKey;
                 _signer = null;
@@ -251,14 +226,16 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem, string password)
+        public override void ImportPem(string privateKeyPem, string password)
         {
-            using (StringReader reader = new StringReader(pem))
+            using (StringReader reader = new StringReader(privateKeyPem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
                 AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair)obj;
-                _privateKey = (ECPrivateKeyParameters)keyPair.Private;
-                _publicKey = (ECPublicKeyParameters)keyPair.Public;
+                ECPrivateKeyParameters privateKey = (ECPrivateKeyParameters)keyPair.Private;
+                ECPublicKeyParameters publicKey = (ECPublicKeyParameters)keyPair.Public;
+                _privateKey = privateKey;
+                _publicKey = publicKey;
                 _signer = null;
                 _verifier = null;
                 _initialized = true;
@@ -367,37 +344,29 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm)
         {
             return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm),
-                                              () => { return new ECGOST3410() { HashAlgorithm = hashAlgorithm }; });
+                                              () => { return new ECGOST3410() { _hashAlgorithm = hashAlgorithm }; });
+        }
+
+        private static DerObjectIdentifier GetNamedOid(ECGOST3410EllipticCurve ellipticCurve)
+        {
+            switch (ellipticCurve)
+            {
+                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_A: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProA;
+                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_B: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProB;
+                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_C: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProC;
+                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_XchA: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProXchA;
+                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_XchB: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProXchB;
+                case ECGOST3410EllipticCurve.Tc26_Gost3410_12_256_ParamSetA: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_256_paramSetA;
+                //case ECGOST3410EllipticCurve.Tc26_Gost3410_12_512_ParamSetA: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetA;
+                //case ECGOST3410EllipticCurve.Tc26_Gost3410_12_512_ParamSetB: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetB;
+                //case ECGOST3410EllipticCurve.Tc26_Gost3410_12_512_ParamSetC: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetC;
+                default: throw new CryptographicException("Unsupported elliptic curve.");
+            }
         }
 
         private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm)
         {
             return $"{hashAlgorithm.Name}with{NAME}";
-        }
-
-        private static X9ECParameters GetX9ECParameters(ECGOST3410EllipticCurve ellipticCurve)
-        {
-            switch (ellipticCurve)
-            {
-                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_A: return ECGost3410NamedCurves.GetByOidX9(CryptoProObjectIdentifiers.GostR3410x2001CryptoProA);
-                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_B: return ECGost3410NamedCurves.GetByOidX9(CryptoProObjectIdentifiers.GostR3410x2001CryptoProB);
-                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_C: return ECGost3410NamedCurves.GetByOidX9(CryptoProObjectIdentifiers.GostR3410x2001CryptoProC);
-                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_XchA: return ECGost3410NamedCurves.GetByOidX9(CryptoProObjectIdentifiers.GostR3410x2001CryptoProXchA);
-                case ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_XchB: return ECGost3410NamedCurves.GetByOidX9(CryptoProObjectIdentifiers.GostR3410x2001CryptoProXchB);
-                case ECGOST3410EllipticCurve.Tc26_Gost3410_12_256_ParamSetA: return ECGost3410NamedCurves.GetByOidX9(RosstandartObjectIdentifiers.id_tc26_gost_3410_12_256_paramSetA);
-                case ECGOST3410EllipticCurve.Tc26_Gost3410_12_512_ParamSetA: return ECGost3410NamedCurves.GetByOidX9(RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetA);
-                case ECGOST3410EllipticCurve.Tc26_Gost3410_12_512_ParamSetB: return ECGost3410NamedCurves.GetByOidX9(RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetB);
-                case ECGOST3410EllipticCurve.Tc26_Gost3410_12_512_ParamSetC: return ECGost3410NamedCurves.GetByOidX9(RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetC);
-                default: throw new CryptographicException("Unsupported elliptic curve.");
-            }
-        }
-
-        private void InspectParameters()
-        {
-            if (!_initialized)
-            {
-                GenerateParameters();
-            }
         }
 
         private void InspectSigner(bool forSigning)

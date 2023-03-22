@@ -12,7 +12,6 @@ using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -36,17 +35,13 @@ namespace Honoo.BouncyCastle.NetStyles
         private IAsymmetricBlockCipher _decryptor = null;
         private IAsymmetricBlockCipher _encryptor = null;
         private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
-        private bool _initialized = false;
         private int _keySize = DEFAULT_KEY_SIZE;
         private AsymmetricEncryptionPaddingMode _padding = AsymmetricEncryptionPaddingMode.PKCS1;
-        private AsymmetricKeyParameter _privateKey = null;
-        private AsymmetricKeyParameter _publicKey = null;
         private RSASignaturePaddingMode _signaturePadding = RSASignaturePaddingMode.PKCS1;
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
         /// <inheritdoc/>
-
         public int DecryptInputLength
         {
             get
@@ -202,7 +197,7 @@ namespace Honoo.BouncyCastle.NetStyles
         #region GenerateParameters
 
         /// <inheritdoc/>
-        public void GenerateParameters()
+        public override void GenerateParameters()
         {
             GenerateParameters(DEFAULT_KEY_SIZE, DEFAULT_CERTAINTY);
         }
@@ -222,7 +217,7 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 throw new CryptographicException("Legal certainty is more than 0.");
             }
-            RsaKeyGenerationParameters parameters = new RsaKeyGenerationParameters(BigInteger.ValueOf(0x10001), Common.SecureRandom, keySize, certainty);
+            RsaKeyGenerationParameters parameters = new RsaKeyGenerationParameters(BigInteger.ValueOf(0x10001), Common.SecureRandom.Value, keySize, certainty);
             RsaKeyPairGenerator generator = new RsaKeyPairGenerator();
             generator.Init(parameters);
             AsymmetricCipherKeyPair keyPair = generator.GenerateKeyPair();
@@ -240,39 +235,12 @@ namespace Honoo.BouncyCastle.NetStyles
 
         #region Export/Import Parameters
 
-        /// <inheritdoc/>
-        public byte[] ExportKeyInfo(bool includePrivate)
-        {
-            InspectParameters();
-            if (includePrivate)
-            {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(_privateKey);
-                return privateKeyInfo.GetEncoded();
-            }
-            else
-            {
-                SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(_publicKey);
-                return publicKeyInfo.GetEncoded();
-            }
-        }
-
-        /// <inheritdoc/>
-        public byte[] ExportKeyInfo(PBEAlgorithmName pbeAlgorithmName, string password)
-        {
-            InspectParameters();
-            byte[] salt = new byte[16];
-            Common.SecureRandom.NextBytes(salt);
-            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
-                pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
-            return enc.GetEncoded();
-        }
-
         /// <summary>
         /// Exports <see cref="RSAParameters"/> containing the asymmetric algorithm key information associated.
         /// </summary>
         /// <param name="includePrivate">true to include the private key; otherwise, false.</param>
         /// <returns></returns>
-        public RSAParameters ExportParameters(bool includePrivate)
+        public RSAParameters ExportNetParameters(bool includePrivate)
         {
             InspectParameters();
             if (includePrivate)
@@ -282,31 +250,6 @@ namespace Honoo.BouncyCastle.NetStyles
             else
             {
                 return DotNetUtilities.ToRSAParameters((RsaKeyParameters)_publicKey);
-            }
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(bool includePrivate)
-        {
-            InspectParameters();
-            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(asymmetricKey);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            InspectParameters();
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
-                return writer.ToString();
             }
         }
 
@@ -320,7 +263,7 @@ namespace Honoo.BouncyCastle.NetStyles
             InspectParameters();
             if (includePrivate)
             {
-                RSAParameters parameters = ExportParameters(true);
+                RSAParameters parameters = DotNetUtilities.ToRSAParameters((RsaPrivateCrtKeyParameters)_privateKey);
                 XElement root = new XElement("RSAKeyValue");
                 root.Add(new XElement("Modulus", Convert.ToBase64String(parameters.Modulus)));
                 root.Add(new XElement("Exponent", Convert.ToBase64String(parameters.Exponent)));
@@ -341,10 +284,10 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             else
             {
-                RsaKeyParameters key = (RsaKeyParameters)_publicKey;
+                RSAParameters parameters = DotNetUtilities.ToRSAParameters((RsaKeyParameters)_publicKey);
                 XElement root = new XElement("RSAKeyValue");
-                root.Add(new XElement("Modulus", Convert.ToBase64String(key.Modulus.ToByteArray())));
-                root.Add(new XElement("Exponent", Convert.ToBase64String(key.Exponent.ToByteArray())));
+                root.Add(new XElement("Modulus", Convert.ToBase64String(parameters.Modulus)));
+                root.Add(new XElement("Exponent", Convert.ToBase64String(parameters.Exponent)));
                 StringBuilder builder = new StringBuilder();
                 XmlWriterSettings settings = new XmlWriterSettings() { Indent = true, Encoding = new UTF8Encoding(false), OmitXmlDeclaration = true };
                 using (XmlWriter writer = XmlWriter.Create(builder, settings))
@@ -357,23 +300,23 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo)
+        public override void ImportKeyInfo(byte[] keyInfo)
         {
             RsaPrivateCrtKeyParameters privateKey = null;
             RsaKeyParameters publicKey = null;
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             try
             {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
-                privateKey = (RsaPrivateCrtKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                PrivateKeyInfo priInfo = PrivateKeyInfo.GetInstance(asn1);
+                privateKey = (RsaPrivateCrtKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
                 publicKey = new RsaKeyParameters(false, privateKey.Modulus, privateKey.PublicExponent);
             }
             catch
             {
                 try
                 {
-                    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
-                    publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                    SubjectPublicKeyInfo pubInfo = SubjectPublicKeyInfo.GetInstance(asn1);
+                    publicKey = (RsaKeyParameters)PublicKeyFactory.CreateKey(pubInfo);
                 }
                 catch
                 {
@@ -390,12 +333,12 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo, string password)
+        public override void ImportKeyInfo(byte[] privateKeyInfo, string password)
         {
-            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            Asn1Object asn1 = Asn1Object.FromByteArray(privateKeyInfo);
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
-            RsaPrivateCrtKeyParameters privateKey = (RsaPrivateCrtKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            PrivateKeyInfo priInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
+            RsaPrivateCrtKeyParameters privateKey = (RsaPrivateCrtKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
             RsaKeyParameters publicKey = new RsaKeyParameters(false, privateKey.Modulus, privateKey.PublicExponent);
             _privateKey = privateKey;
             _publicKey = publicKey;
@@ -407,11 +350,51 @@ namespace Honoo.BouncyCastle.NetStyles
             _initialized = true;
         }
 
+
+
+        /// <inheritdoc/>
+        public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
+        {
+            RsaPrivateCrtKeyParameters privateKey = null;
+            RsaKeyParameters publicKey;
+            if (asymmetricKey.IsPrivate)
+            {
+                privateKey = (RsaPrivateCrtKeyParameters)asymmetricKey;
+                publicKey = new RsaKeyParameters(false, privateKey.Modulus, privateKey.PublicExponent);
+            }
+            else
+            {
+                publicKey = (RsaKeyParameters)asymmetricKey;
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Modulus.BitLength;
+            _encryptor = null;
+            _decryptor = null;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportParameters(AsymmetricCipherKeyPair keyPair)
+        {
+            RsaPrivateCrtKeyParameters privateKey = (RsaPrivateCrtKeyParameters)keyPair.Private;
+            RsaKeyParameters publicKey = (RsaKeyParameters)keyPair.Public;
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Modulus.BitLength;
+            _encryptor = null;
+            _decryptor = null;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
         /// <summary>
         /// Imports a <see cref="RSAParameters"/> that represents asymmetric algorithm key information.
         /// </summary>
         /// <param name="parameters">A <see cref="RSAParameters"/> that represents an asymmetric algorithm key.</param>
-        public void ImportParameters(RSAParameters parameters)
+        public void ImportNetParameters(RSAParameters parameters)
         {
             RsaPrivateCrtKeyParameters privateKey = null;
             RsaKeyParameters publicKey;
@@ -434,11 +417,10 @@ namespace Honoo.BouncyCastle.NetStyles
             _verifier = null;
             _initialized = true;
         }
-
         /// <inheritdoc/>
-        public void ImportPem(string pem)
+        public override void ImportPem(string keyPem)
         {
-            using (StringReader reader = new StringReader(pem))
+            using (StringReader reader = new StringReader(keyPem))
             {
                 RsaPrivateCrtKeyParameters privateKey = null;
                 RsaKeyParameters publicKey;
@@ -465,9 +447,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem, string password)
+        public override void ImportPem(string privateKeyPem, string password)
         {
-            using (StringReader reader = new StringReader(pem))
+            using (StringReader reader = new StringReader(privateKeyPem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
                 AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair)obj;
@@ -722,7 +704,14 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm, RSASignaturePaddingMode signaturePadding)
         {
             return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm, signaturePadding),
-                                              () => { return new RSA() { HashAlgorithm = hashAlgorithm, SignaturePadding = signaturePadding }; });
+                                              () =>
+                                              {
+                                                  return new RSA()
+                                                  {
+                                                      _hashAlgorithm = hashAlgorithm,
+                                                      _signaturePadding = signaturePadding,
+                                                  };
+                                              });
         }
 
         private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm, RSASignaturePaddingMode signaturePadding)
@@ -785,14 +774,6 @@ namespace Honoo.BouncyCastle.NetStyles
             }
         }
 
-        private void InspectParameters()
-        {
-            if (!_initialized)
-            {
-                GenerateParameters();
-            }
-        }
-
         private void InspectSigner(bool forSigning)
         {
             if (forSigning)
@@ -803,7 +784,7 @@ namespace Honoo.BouncyCastle.NetStyles
                     switch (_signaturePadding)
                     {
                         case RSASignaturePaddingMode.PKCS1: _signer = new RsaDigestSigner(digest); break;
-                        case RSASignaturePaddingMode.MGF1: _signer = new PssSigner(new RsaBlindedEngine(), digest); break;
+                        case RSASignaturePaddingMode.MGF1: _signer = new PssSigner(new RsaBlindedEngine(), digest, _hashAlgorithm.HashSize / 8); break;
                         case RSASignaturePaddingMode.X931: _signer = new X931Signer(new RsaBlindedEngine(), digest); break;
                         case RSASignaturePaddingMode.ISO9796_2: _signer = new Iso9796d2Signer(new RsaBlindedEngine(), digest); break;
                         default: throw new CryptographicException("Unsupported signature padding mode.");
@@ -819,7 +800,7 @@ namespace Honoo.BouncyCastle.NetStyles
                     switch (_signaturePadding)
                     {
                         case RSASignaturePaddingMode.PKCS1: _verifier = new RsaDigestSigner(digest); break;
-                        case RSASignaturePaddingMode.MGF1: _verifier = new PssSigner(new RsaBlindedEngine(), digest); break;
+                        case RSASignaturePaddingMode.MGF1: _verifier = new PssSigner(new RsaBlindedEngine(), digest, _hashAlgorithm.HashSize / 8); break;
                         case RSASignaturePaddingMode.X931: _verifier = new X931Signer(new RsaBlindedEngine(), digest); break;
                         case RSASignaturePaddingMode.ISO9796_2: _verifier = new Iso9796d2Signer(new RsaBlindedEngine(), digest); break;
                         default: throw new CryptographicException("Unsupported signature padding mode.");

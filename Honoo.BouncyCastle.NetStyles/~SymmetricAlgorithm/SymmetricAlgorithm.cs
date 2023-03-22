@@ -93,15 +93,126 @@ namespace Honoo.BouncyCastle.NetStyles
 
         #endregion Construction
 
+        #region GenerateParameters
+
         /// <summary>
-        /// Creates an instance of the algorithm by algorithm name.
+        /// Renew parameters of the algorithm by default key size and iv size.
         /// </summary>
-        /// <param name="algorithmName">Asymmetric algorithm name.</param>
-        /// <returns></returns>
-        public static SymmetricAlgorithm Create(SymmetricAlgorithmName algorithmName)
+        public abstract void GenerateParameters();
+
+        /// <summary>
+        /// Renew parameters of the algorithm.
+        /// </summary>
+        /// <param name="keySize">Key size bits.</param>
+        /// <param name="ivSize">IV size bits.</param>
+        public void GenerateParameters(int keySize, int ivSize)
         {
-            return algorithmName.GetAlgorithm();
+            if (!ValidKeySize(keySize, out string exception))
+            {
+                throw new CryptographicException(exception);
+            }
+            if (!ValidIVSize(ivSize, out exception))
+            {
+                throw new CryptographicException(exception);
+            }
+            byte[] key = new byte[keySize / 8];
+            Common.SecureRandom.Value.NextBytes(key);
+            _parameters = GetKeyParameter(key);
+            if (ivSize > 0)
+            {
+                byte[] iv = new byte[ivSize / 8];
+                Common.SecureRandom.Value.NextBytes(iv);
+                _parameters = new ParametersWithIV(_parameters, iv);
+            }
+            _keySize = keySize;
+            _ivSize = ivSize;
+            _encryptor = null;
+            _decryptor = null;
+            _initialized = true;
         }
+
+        #endregion GenerateParameters
+
+        #region Export/Import Parameters
+
+        /// <summary>
+        /// Exports key and iv.
+        /// </summary>
+        /// <param name="key">Output key bytes.</param>
+        /// <param name="iv">Output iv bytes.</param>
+        /// <returns></returns>
+        public void ExportParameters(out byte[] key, out byte[] iv)
+        {
+            InspectParameters();
+            if (_parameters.GetType() == typeof(AeadParameters))
+            {
+                AeadParameters parameters = (AeadParameters)_parameters;
+                key = parameters.Key.GetKey();
+                // BouncyCastle has not clone nonce and associatedText.
+                iv = (byte[])parameters.GetNonce().Clone();
+            }
+            else if (_parameters.GetType() == typeof(ParametersWithIV))
+            {
+                ParametersWithIV parameters = (ParametersWithIV)_parameters;
+                key = ((KeyParameter)parameters.Parameters).GetKey();
+                iv = parameters.GetIV();
+            }
+            else
+            {
+                KeyParameter parameter = (KeyParameter)_parameters;
+                key = parameter.GetKey();
+                iv = null;
+            }
+        }
+
+        /// <summary>
+        /// Exports a <see cref="ICipherParameters"/> containing the symmetric algorithm parameters information associated.
+        /// </summary>
+        /// <returns></returns>
+        public ICipherParameters ExportParameters()
+        {
+            InspectParameters();
+            return _parameters;
+        }
+
+        /// <summary>
+        /// Imports a <see cref="ICipherParameters"/> that represents symmetric algorithm parameters information.
+        /// </summary>
+        /// <param name="parameters">A BouncyCastle <see cref="ICipherParameters"/> that represents an symmetric algorithm parameters.</param>
+        public abstract void ImportParameters(ICipherParameters parameters);
+
+        /// <summary>
+        /// Imports key and iv.
+        /// </summary>
+        /// <param name="key">Import key bytes.</param>
+        /// <param name="iv">Import iv bytes.</param>
+        public void ImportParameters(byte[] key, byte[] iv)
+        {
+            int keySize = key.Length * 8;
+            int ivSize = iv == null ? 0 : iv.Length * 8;
+            if (!ValidKeySize(keySize, out string exception))
+            {
+                throw new CryptographicException(exception);
+            }
+            if (!ValidIVSize(ivSize, out exception))
+            {
+                throw new CryptographicException(exception);
+            }
+            _parameters = GetKeyParameter(key);
+            if (ivSize > 0)
+            {
+                _parameters = new ParametersWithIV(_parameters, iv);
+            }
+            _keySize = keySize;
+            _ivSize = ivSize;
+            _encryptor = null;
+            _decryptor = null;
+            _initialized = true;
+        }
+
+        #endregion Export/Import Parameters
+
+        #region Encryption
 
         /// <summary>
         /// Decrypts data with the symmetric algorithm.
@@ -231,99 +342,16 @@ namespace Honoo.BouncyCastle.NetStyles
             return _encryptor.ProcessBytes(inputBuffer, inOffset, inLength, outputBuffer, outOffset);
         }
 
+        #endregion Encryption
+
         /// <summary>
-        /// Exports key and iv.
+        /// Creates an instance of the algorithm by algorithm name.
         /// </summary>
-        /// <param name="key">Output key bytes.</param>
-        /// <param name="iv">Output iv bytes.</param>
+        /// <param name="algorithmName">Asymmetric algorithm name.</param>
         /// <returns></returns>
-        public void ExportParameters(out byte[] key, out byte[] iv)
+        public static SymmetricAlgorithm Create(SymmetricAlgorithmName algorithmName)
         {
-            InspectParameters();
-            if (_parameters.GetType() == typeof(AeadParameters))
-            {
-                AeadParameters parameters = (AeadParameters)_parameters;
-                key = parameters.Key.GetKey();
-                // BouncyCastle has not clone nonce and associatedText.
-                iv = (byte[])parameters.GetNonce().Clone();
-            }
-            else if (_parameters.GetType() == typeof(ParametersWithIV))
-            {
-                ParametersWithIV parameters = (ParametersWithIV)_parameters;
-                key = ((KeyParameter)parameters.Parameters).GetKey();
-                iv = parameters.GetIV();
-            }
-            else
-            {
-                KeyParameter parameter = (KeyParameter)_parameters;
-                key = parameter.GetKey();
-                iv = null;
-            }
-        }
-
-        /// <summary>
-        /// Renew parameters of the algorithm by default key size and iv size.
-        /// </summary>
-        public abstract void GenerateParameters();
-
-        /// <summary>
-        /// Renew parameters of the algorithm.
-        /// </summary>
-        /// <param name="keySize">Key size bits.</param>
-        /// <param name="ivSize">IV size bits.</param>
-        public void GenerateParameters(int keySize, int ivSize)
-        {
-            if (!ValidKeySize(keySize, out string exception))
-            {
-                throw new CryptographicException(exception);
-            }
-            if (!ValidIVSize(ivSize, out exception))
-            {
-                throw new CryptographicException(exception);
-            }
-            byte[] key = new byte[keySize / 8];
-            Common.SecureRandom.NextBytes(key);
-            _parameters = GetKeyParameter(key);
-            if (ivSize > 0)
-            {
-                byte[] iv = new byte[ivSize / 8];
-                Common.SecureRandom.NextBytes(iv);
-                _parameters = new ParametersWithIV(_parameters, iv);
-            }
-            _keySize = keySize;
-            _ivSize = ivSize;
-            _encryptor = null;
-            _decryptor = null;
-            _initialized = true;
-        }
-
-        /// <summary>
-        /// Imports key and iv.
-        /// </summary>
-        /// <param name="key">Import key bytes.</param>
-        /// <param name="iv">Import iv bytes.</param>
-        public void ImportParameters(byte[] key, byte[] iv)
-        {
-            int keySize = key.Length * 8;
-            int ivSize = iv == null || iv.Length == 0 ? 0 : iv.Length * 8;
-            if (!ValidKeySize(keySize, out string exception))
-            {
-                throw new CryptographicException(exception);
-            }
-            if (!ValidIVSize(ivSize, out exception))
-            {
-                throw new CryptographicException(exception);
-            }
-            _parameters = GetKeyParameter(key);
-            if (ivSize > 0)
-            {
-                _parameters = new ParametersWithIV(_parameters, iv);
-            }
-            _keySize = keySize;
-            _ivSize = ivSize;
-            _encryptor = null;
-            _decryptor = null;
-            _initialized = true;
+            return algorithmName.GetAlgorithm();
         }
 
         /// <summary>
@@ -353,12 +381,6 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <param name="exception">Exception message.</param>
         /// <returns></returns>
         public abstract bool ValidKeySize(int keySize, out string exception);
-
-        internal ICipherParameters ExportParameters()
-        {
-            InspectParameters();
-            return _parameters;
-        }
 
         /// <summary>
         /// Do fix at final decrypted.

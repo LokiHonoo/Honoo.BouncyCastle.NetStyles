@@ -3,8 +3,18 @@
     /// <summary>
     /// Key exchange algorithm party A's interface.
     /// </summary>
-    public interface IKeyExchangeA : IAsymmetricAlgorithm
+    public interface IKeyExchangeA
     {
+        /// <summary>
+        /// Gets the asymmetric algorithm kind of the algorithm.
+        /// </summary>
+        AsymmetricAlgorithmKind Kind { get; }
+
+        /// <summary>
+        /// Gets the asymmetric algorithm name of the algorithm.
+        /// </summary>
+        string Name { get; }
+
         /// <summary>
         /// Sand this value to party B.
         /// </summary>
@@ -19,6 +29,10 @@
         /// Sand this value to party B.
         /// </summary>
         byte[] PublicKeyA { get; }
+        /// <summary>
+        /// Renew private key and public key of the algorithm by default.
+        /// </summary>
+        void GenerateParameters();
 
         /// <summary>
         /// Derive key material from the party B's exchange.
@@ -27,11 +41,6 @@
         /// <param name="unsigned">Output unsigned bytes.</param>
         /// <returns></returns>
         byte[] DeriveKeyMaterial(byte[] publicKeyB, bool unsigned);
-
-        /// <summary>
-        /// Renew key exchange parameters of the algorithm by default.
-        /// </summary>
-        void GenerateParameters();
 
         /// <summary>
         /// Renew key exchange parameters of the algorithm.

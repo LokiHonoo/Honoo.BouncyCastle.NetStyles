@@ -10,7 +10,6 @@ using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -24,12 +23,9 @@ namespace Honoo.BouncyCastle.NetStyles
     {
         #region Properties
 
-        private const GOST3410CryptoPro DEFAULT_CRYPTO_PRO = GOST3410CryptoPro.GostR3410x94CryptoProA;
+        private const GOST3410Parameters DEFAULT_PARAMETERS = GOST3410Parameters.GostR3410x94CryptoProA;
         private const string NAME = "GOST3410";
         private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.GOST3411;
-        private bool _initialized = false;
-        private AsymmetricKeyParameter _privateKey = null;
-        private AsymmetricKeyParameter _publicKey = null;
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
@@ -105,26 +101,23 @@ namespace Honoo.BouncyCastle.NetStyles
         #region GenerateParameters
 
         /// <inheritdoc/>
-        public void GenerateParameters()
+        public override void GenerateParameters()
         {
-            GenerateParameters(DEFAULT_CRYPTO_PRO);
+            GenerateParameters(DEFAULT_PARAMETERS);
         }
 
         /// <summary>
         /// Renew private key and public key of the algorithm.
         /// </summary>
-        /// <param name="cryptoPro">Elliptic curve to be uesd.</param>
-        public void GenerateParameters(GOST3410CryptoPro cryptoPro = DEFAULT_CRYPTO_PRO)
+        /// <param name="parameters">GOST3410 parameters.</param>
+        public void GenerateParameters(GOST3410Parameters parameters = DEFAULT_PARAMETERS)
         {
-            //
-            // Gost3410ParametersGenerator with key size created key pair con't be save to pkcs8.
-            //
+            //// Gost3410ParametersGenerator with key size created key pair con't be save to pkcs8.
             //Gost3410ParametersGenerator parametersGenerator = new Gost3410ParametersGenerator();
             //parametersGenerator.Init(keySize, procedure, Common.SecureRandom);
             //Gost3410Parameters parameters = parametersGenerator.GenerateParameters();
             //Gost3410KeyGenerationParameters generationParameters = new Gost3410KeyGenerationParameters(Common.SecureRandom, parameters);
-
-            var generationParameters = new Gost3410KeyGenerationParameters(Common.SecureRandom, GetCryptoPro(cryptoPro));
+            var generationParameters = new Gost3410KeyGenerationParameters(Common.SecureRandom.Value, GetGOST3410Parameters(parameters));
             Gost3410KeyPairGenerator keyPairGenerator = new Gost3410KeyPairGenerator();
             keyPairGenerator.Init(generationParameters);
             AsymmetricCipherKeyPair keyPair = keyPairGenerator.GenerateKeyPair();
@@ -140,67 +133,15 @@ namespace Honoo.BouncyCastle.NetStyles
         #region Export/Import Parameters
 
         /// <inheritdoc/>
-        public byte[] ExportKeyInfo(bool includePrivate)
-        {
-            InspectParameters();
-            if (includePrivate)
-            {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(_privateKey);
-                return privateKeyInfo.GetEncoded();
-            }
-            else
-            {
-                SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(_publicKey);
-                return publicKeyInfo.GetEncoded();
-            }
-        }
-
-        /// <inheritdoc/>
-        public byte[] ExportKeyInfo(PBEAlgorithmName pbeAlgorithmName, string password)
-        {
-            InspectParameters();
-            byte[] salt = new byte[16];
-            Common.SecureRandom.NextBytes(salt);
-            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
-                pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
-            return enc.GetEncoded();
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(bool includePrivate)
-        {
-            InspectParameters();
-            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(asymmetricKey);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            InspectParameters();
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo)
+        public override void ImportKeyInfo(byte[] keyInfo)
         {
             Gost3410PrivateKeyParameters privateKey = null;
             Gost3410PublicKeyParameters publicKey = null;
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             try
             {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
-                privateKey = (Gost3410PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                PrivateKeyInfo priInfo = PrivateKeyInfo.GetInstance(asn1);
+                privateKey = (Gost3410PrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
                 BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
                 publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
             }
@@ -208,8 +149,8 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 try
                 {
-                    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
-                    publicKey = (Gost3410PublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                    SubjectPublicKeyInfo pubInfo = SubjectPublicKeyInfo.GetInstance(asn1);
+                    publicKey = (Gost3410PublicKeyParameters)PublicKeyFactory.CreateKey(pubInfo);
                 }
                 catch
                 {
@@ -223,12 +164,12 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo, string password)
+        public override void ImportKeyInfo(byte[] privateKeyInfo, string password)
         {
-            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            Asn1Object asn1 = Asn1Object.FromByteArray(privateKeyInfo);
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
-            Gost3410PrivateKeyParameters privateKey = (Gost3410PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            PrivateKeyInfo priInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
+            Gost3410PrivateKeyParameters privateKey = (Gost3410PrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
             BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
             Gost3410PublicKeyParameters publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
             _privateKey = privateKey;
@@ -239,9 +180,41 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem)
+        public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
         {
-            using (StringReader reader = new StringReader(pem))
+            Gost3410PrivateKeyParameters privateKey = null;
+            Gost3410PublicKeyParameters publicKey;
+            if (asymmetricKey.IsPrivate)
+            {
+                privateKey = (Gost3410PrivateKeyParameters)asymmetricKey;
+                BigInteger y = privateKey.Parameters.A.ModPow(privateKey.X, privateKey.Parameters.P);
+                publicKey = new Gost3410PublicKeyParameters(y, privateKey.Parameters);
+            }
+            else
+            {
+                publicKey = (Gost3410PublicKeyParameters)asymmetricKey;
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportParameters(AsymmetricCipherKeyPair keyPair)
+        {
+            _privateKey = (Gost3410PrivateKeyParameters)keyPair.Private;
+            _publicKey = (Gost3410PublicKeyParameters)keyPair.Public;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportPem(string keyPem)
+        {
+            using (StringReader reader = new StringReader(keyPem))
             {
                 Gost3410PrivateKeyParameters privateKey = null;
                 Gost3410PublicKeyParameters publicKey;
@@ -265,9 +238,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem, string password)
+        public override void ImportPem(string privateKeyPem, string password)
         {
-            using (StringReader reader = new StringReader(pem))
+            using (StringReader reader = new StringReader(privateKeyPem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
                 Gost3410PrivateKeyParameters privateKey = (Gost3410PrivateKeyParameters)obj;
@@ -383,31 +356,27 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm)
         {
             return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm),
-                                              () => { return new GOST3410() { HashAlgorithm = hashAlgorithm }; });
+                                              () => { return new GOST3410() { _hashAlgorithm = hashAlgorithm }; });
         }
 
-        private static DerObjectIdentifier GetCryptoPro(GOST3410CryptoPro cryptoPro)
+        private static DerObjectIdentifier GetGOST3410Parameters(GOST3410Parameters parameters)
         {
-            switch (cryptoPro)
+            switch (parameters)
             {
-                case GOST3410CryptoPro.GostR3410x94CryptoProA: return CryptoProObjectIdentifiers.GostR3410x94CryptoProA;
-                case GOST3410CryptoPro.GostR3410x94CryptoProB: return CryptoProObjectIdentifiers.GostR3410x94CryptoProB;
-                case GOST3410CryptoPro.GostR3410x94CryptoProXchA: return CryptoProObjectIdentifiers.GostR3410x94CryptoProXchA;
-                default: throw new CryptographicException("Unsupported crypto pro.");
+                case GOST3410Parameters.GostR3410x94CryptoProA: return CryptoProObjectIdentifiers.GostR3410x94CryptoProA;
+                case GOST3410Parameters.GostR3410x94CryptoProB: return CryptoProObjectIdentifiers.GostR3410x94CryptoProB;
+                //case GOST3410Parameters.GostR3410x94CryptoProC: return CryptoProObjectIdentifiers.GostR3410x94CryptoProC;
+                //case GOST3410Parameters.GostR3410x94CryptoProD: return CryptoProObjectIdentifiers.GostR3410x94CryptoProD;
+                case GOST3410Parameters.GostR3410x94CryptoProXchA: return CryptoProObjectIdentifiers.GostR3410x94CryptoProXchA;
+                //case GOST3410Parameters.GostR3410x94CryptoProXchB: return CryptoProObjectIdentifiers.GostR3410x94CryptoProXchB;
+                //case GOST3410Parameters.GostR3410x94CryptoProXchC: return CryptoProObjectIdentifiers.GostR3410x94CryptoProXchC;
+                default: throw new CryptographicException("Unsupported GOST3410 parameters.");
             }
         }
 
         private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm)
         {
             return $"{hashAlgorithm.Name}with{NAME}";
-        }
-
-        private void InspectParameters()
-        {
-            if (!_initialized)
-            {
-                GenerateParameters();
-            }
         }
 
         private void InspectSigner(bool forSigning)

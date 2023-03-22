@@ -14,9 +14,9 @@
         GostR3410_2001_CryptoPro_XchA,
         GostR3410_2001_CryptoPro_XchB,
         Tc26_Gost3410_12_256_ParamSetA,
-        Tc26_Gost3410_12_512_ParamSetA,
-        Tc26_Gost3410_12_512_ParamSetB,
-        Tc26_Gost3410_12_512_ParamSetC,
+        //Tc26_Gost3410_12_512_ParamSetA,
+        //Tc26_Gost3410_12_512_ParamSetB,
+        //Tc26_Gost3410_12_512_ParamSetC,
 
 #pragma warning restore CS1591 // 缺少对公共可见类型或成员的 XML 注释
     }

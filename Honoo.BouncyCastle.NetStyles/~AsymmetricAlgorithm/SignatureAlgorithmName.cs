@@ -1,4 +1,13 @@
-﻿using System;
+﻿using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.Bsi;
+using Org.BouncyCastle.Asn1.CryptoPro;
+using Org.BouncyCastle.Asn1.Eac;
+using Org.BouncyCastle.Asn1.GM;
+using Org.BouncyCastle.Asn1.Nist;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Asn1.TeleTrust;
+using Org.BouncyCastle.Asn1.X9;
+using System;
 
 namespace Honoo.BouncyCastle.NetStyles
 {
@@ -13,13 +22,7 @@ namespace Honoo.BouncyCastle.NetStyles
 
         #endregion Delegate
 
-        #region AlgorithmNames
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName GOST3411withECGOST3410 { get; } = ECGOST3410.GetSignatureAlgorithmName(HashAlgorithmName.GOST3411);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName GOST3411withGOST3410 { get; } = GOST3410.GetSignatureAlgorithmName(HashAlgorithmName.GOST3411);
+        #region RSA
 
         /// <summary></summary>
         public static SignatureAlgorithmName MD2withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.MD2, RSASignaturePaddingMode.PKCS1);
@@ -27,16 +30,8 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <summary></summary>
         public static SignatureAlgorithmName MD5withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.MD5, RSASignaturePaddingMode.PKCS1);
 
-        /// <summary>
-        /// PSSwithRSA, SHA1withRSAandMGF1.
-        /// </summary>
-        public static SignatureAlgorithmName PSSwithRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, RSASignaturePaddingMode.MGF1);
-
         /// <summary></summary>
         public static SignatureAlgorithmName RIPEMD128withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.RIPEMD128, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName RIPEMD160withPLAIN_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.RIPEMD160, ECDSASignatureExtension.Plain);
 
         /// <summary></summary>
         public static SignatureAlgorithmName RIPEMD160withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.RIPEMD160, RSASignaturePaddingMode.PKCS1);
@@ -45,9 +40,64 @@ namespace Honoo.BouncyCastle.NetStyles
         public static SignatureAlgorithmName RIPEMD256withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.RIPEMD256, RSASignaturePaddingMode.PKCS1);
 
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA1withCVC_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, ECDSASignatureExtension.CVC);
+        public static SignatureAlgorithmName SHA1withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, RSASignaturePaddingMode.PKCS1);
 
-        public static SignatureAlgorithmName SHA1withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, DSASignatureEncodingMode.Standard);
+        /// <summary>
+        /// PSSwithRSA.
+        /// </summary>
+        public static SignatureAlgorithmName SHA1withRSAandMGF1 { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, RSASignaturePaddingMode.MGF1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA224withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA224withRSAandMGF1 { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, RSASignaturePaddingMode.MGF1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA256withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA256withRSAandMGF1 { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, RSASignaturePaddingMode.MGF1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA3_224withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_224, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA3_256withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_256, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA3_384withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_384, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA3_512withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_512, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA384withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA384withRSAandMGF1 { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, RSASignaturePaddingMode.MGF1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA512_224withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512_224, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA512_256withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512_256, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA512withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512, RSASignaturePaddingMode.PKCS1);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA512withRSAandMGF1 { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512, RSASignaturePaddingMode.MGF1);
+
+        #endregion RSA
+
+        #region ECDSA
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName RIPEMD160withPLAIN_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.RIPEMD160, ECDSASignatureExtension.Plain);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA1withCVC_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, ECDSASignatureExtension.CVC);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA1withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, ECDSASignatureExtension.ECDSA);
@@ -56,12 +106,7 @@ namespace Honoo.BouncyCastle.NetStyles
         public static SignatureAlgorithmName SHA1withPLAIN_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, ECDSASignatureExtension.Plain);
 
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA1withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
         public static SignatureAlgorithmName SHA224withCVC_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, ECDSASignatureExtension.CVC);
-
-        public static SignatureAlgorithmName SHA224withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, DSASignatureEncodingMode.Standard);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA224withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, ECDSASignatureExtension.ECDSA);
@@ -70,13 +115,7 @@ namespace Honoo.BouncyCastle.NetStyles
         public static SignatureAlgorithmName SHA224withPLAIN_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, ECDSASignatureExtension.Plain);
 
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA224withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
         public static SignatureAlgorithmName SHA256withCVC_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, ECDSASignatureExtension.CVC);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA256withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, DSASignatureEncodingMode.Standard);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA256withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, ECDSASignatureExtension.ECDSA);
@@ -85,52 +124,19 @@ namespace Honoo.BouncyCastle.NetStyles
         public static SignatureAlgorithmName SHA256withPLAIN_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, ECDSASignatureExtension.Plain);
 
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA256withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA256withSM2 { get; } = SM2.GetSignatureAlgorithmName(HashAlgorithmName.SHA256);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_224withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_224, DSASignatureEncodingMode.Standard);
-
-        /// <summary></summary>
         public static SignatureAlgorithmName SHA3_224withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_224, ECDSASignatureExtension.ECDSA);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_224withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_224, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_256withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_256, DSASignatureEncodingMode.Standard);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA3_256withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_256, ECDSASignatureExtension.ECDSA);
 
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_256withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_256, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_384withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_384, DSASignatureEncodingMode.Standard);
-
-        /// <summary></summary>
         public static SignatureAlgorithmName SHA3_384withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_384, ECDSASignatureExtension.ECDSA);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_384withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_384, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_512withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_512, DSASignatureEncodingMode.Standard);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA3_512withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_512, ECDSASignatureExtension.ECDSA);
 
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_512withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_512, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
         public static SignatureAlgorithmName SHA384withCVC_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, ECDSASignatureExtension.CVC);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA384withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, DSASignatureEncodingMode.Standard);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA384withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, ECDSASignatureExtension.ECDSA);
@@ -139,13 +145,7 @@ namespace Honoo.BouncyCastle.NetStyles
         public static SignatureAlgorithmName SHA384withPLAIN_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, ECDSASignatureExtension.Plain);
 
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA384withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, RSASignaturePaddingMode.PKCS1);
-
-        /// <summary></summary>
         public static SignatureAlgorithmName SHA512withCVC_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512, ECDSASignatureExtension.CVC);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA512withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512, DSASignatureEncodingMode.Standard);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA512withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512, ECDSASignatureExtension.ECDSA);
@@ -153,24 +153,68 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <summary></summary>
         public static SignatureAlgorithmName SHA512withPLAIN_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512, ECDSASignatureExtension.Plain);
 
+        #endregion ECDSA
+
+        #region DSA
+
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA512withRSA { get; } = RSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512, RSASignaturePaddingMode.PKCS1);
+        public static SignatureAlgorithmName SHA1withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, DSASignatureEncodingMode.Standard);
+
+        public static SignatureAlgorithmName SHA224withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, DSASignatureEncodingMode.Standard);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA256withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, DSASignatureEncodingMode.Standard);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA3_224withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_224, DSASignatureEncodingMode.Standard);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA3_256withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_256, DSASignatureEncodingMode.Standard);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA3_384withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_384, DSASignatureEncodingMode.Standard);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA3_512withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_512, DSASignatureEncodingMode.Standard);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA384withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, DSASignatureEncodingMode.Standard);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA512withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA512, DSASignatureEncodingMode.Standard);
+
+        #endregion DSA
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName GOST3411withECGOST3410 { get; } = ECGOST3410.GetSignatureAlgorithmName(HashAlgorithmName.GOST3411);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName GOST3411withGOST3410 { get; } = GOST3410.GetSignatureAlgorithmName(HashAlgorithmName.GOST3411);
+
+        /// <summary></summary>
+        public static SignatureAlgorithmName SHA256withSM2 { get; } = SM2.GetSignatureAlgorithmName(HashAlgorithmName.SHA256);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SM3withSM2 { get; } = SM2.GetSignatureAlgorithmName(HashAlgorithmName.SM3);
 
-        #endregion AlgorithmNames
-
         #region Properties
 
+        private readonly string _asn1Algorithm;
         private readonly GetAlgorithmCallback _getAlgorithm;
         private readonly string _name;
+        private readonly string _oid;
 
         /// <summary>
         /// Gets this algorithm's name.
         /// </summary>
         public string Name => _name;
 
+        /// <summary>
+        /// Gets this algorithm's oid.
+        /// </summary>
+        public string Oid => _oid;
+
+        internal string Asn1Algorithm => _asn1Algorithm;
         internal GetAlgorithmCallback GetAlgorithm => _getAlgorithm;
 
         #endregion Properties
@@ -180,6 +224,9 @@ namespace Honoo.BouncyCastle.NetStyles
         internal SignatureAlgorithmName(string name, GetAlgorithmCallback getAlgorithm)
         {
             _name = name;
+            DerObjectIdentifier oid = GetOid(name);
+            _oid = oid == null ? string.Empty : oid.Id;
+            _asn1Algorithm = GetAsn1AlgorithmName(name, oid);
             _getAlgorithm = getAlgorithm;
         }
 
@@ -216,7 +263,11 @@ namespace Honoo.BouncyCastle.NetStyles
                 SHA512withPLAIN_ECDSA,
                 RIPEMD160withPLAIN_ECDSA,
 
-                PSSwithRSA,
+                SHA1withRSAandMGF1,
+                SHA224withRSAandMGF1,
+                SHA256withRSAandMGF1,
+                SHA384withRSAandMGF1,
+                SHA512withRSAandMGF1,
 
                 MD2withRSA,
                 MD5withRSA,
@@ -232,6 +283,9 @@ namespace Honoo.BouncyCastle.NetStyles
                 SHA3_256withRSA,
                 SHA3_384withRSA,
                 SHA3_512withRSA,
+
+                SHA512_224withRSA,
+                SHA512_256withRSA,
 
                 SHA1withDSA,
                 SHA224withDSA,
@@ -291,7 +345,11 @@ namespace Honoo.BouncyCastle.NetStyles
                 case "0.4.0.127.0.7.1.1.4.1.5": case "SHA512WITHPLAIN-ECDSA": case "SHA-512WITHPLAIN-ECDSA": algorithmName = SHA512withPLAIN_ECDSA; return true;
                 case "0.4.0.127.0.7.1.1.4.1.6": case "RIPEMD160WITHPLAIN-ECDSA": case "RIPEMD-160WITHPLAIN-ECDSA": algorithmName = RIPEMD160withPLAIN_ECDSA; return true;
 
-                case "1.2.840.113549.1.1.10": case "PSSWITHRSA": case "SHA1WITHRSAANDMGF1": case "SHA-1WITHRSAANDMGF1": algorithmName = PSSwithRSA; return true;
+                case "1.2.840.113549.1.1.10": case "PSSWITHRSA": case "SHA1WITHRSAANDMGF1": case "SHA-1WITHRSAANDMGF1": algorithmName = SHA1withRSAandMGF1; return true;
+                case "SHA224WITHRSAANDMGF1": case "SHA-224WITHRSAANDMGF1": algorithmName = SHA224withRSAandMGF1; return true;
+                case "SHA256WITHRSAANDMGF1": case "SHA-256WITHRSAANDMGF1": algorithmName = SHA256withRSAandMGF1; return true;
+                case "SHA384WITHRSAANDMGF1": case "SHA-384WITHRSAANDMGF1": algorithmName = SHA384withRSAandMGF1; return true;
+                case "SHA512WITHRSAANDMGF1": case "SHA-512WITHRSAANDMGF1": algorithmName = SHA512withRSAandMGF1; return true;
 
                 case "1.2.840.113549.1.1.2": case "MD2WITHRSA": algorithmName = MD2withRSA; return true;
                 case "1.2.840.113549.1.1.4": case "MD5WITHRSA": algorithmName = MD5withRSA; return true;
@@ -307,6 +365,9 @@ namespace Honoo.BouncyCastle.NetStyles
                 case "2.16.840.1.101.3.4.3.14": case "SHA3-256WITHRSA": case "SHA-3-256WITHRSA": algorithmName = SHA3_256withRSA; return true;
                 case "2.16.840.1.101.3.4.3.15": case "SHA3-384WITHRSA": case "SHA-3-384WITHRSA": algorithmName = SHA3_384withRSA; return true;
                 case "2.16.840.1.101.3.4.3.16": case "SHA3-512WITHRSA": case "SHA-3-512WITHRSA": algorithmName = SHA3_512withRSA; return true;
+
+                case "1.2.840.113549.1.1.15": case "SHA512-224WITHRSA": case "SHA-512-224WITHRSA": algorithmName = SHA512_224withRSA; return true;
+                case "1.2.840.113549.1.1.16": case "SHA512-256WITHRSA": case "SHA-512-256WITHRSA": algorithmName = SHA512_256withRSA; return true;
 
                 case "1.2.840.10040.4.3": case "SHA1WITHDSA": case "SHA-1WITHDSA": algorithmName = SHA1withDSA; return true;
                 case "2.16.840.1.101.3.4.3.1": case "SHA224WITHDSA": case "SHA-224WITHDSA": algorithmName = SHA224withDSA; return true;
@@ -425,6 +486,96 @@ namespace Honoo.BouncyCastle.NetStyles
         public override string ToString()
         {
             return _name;
+        }
+
+        private static string GetAsn1AlgorithmName(string name, DerObjectIdentifier oid)
+        {
+            switch (name.ToUpperInvariant())
+            {
+                case "SHA1WITHRSAANDMGF1": return name;
+                case "SHA224WITHRSAANDMGF1": return name;
+                case "SHA256WITHRSAANDMGF1": return name;
+                case "SHA384WITHRSAANDMGF1": return name;
+                case "SHA512WITHRSAANDMGF1": return name;
+                default: return oid == null ? name : oid.Id;
+            }
+        }
+
+        private static DerObjectIdentifier GetOid(string mechanism)
+        {
+            if (string.IsNullOrWhiteSpace(mechanism))
+            {
+                return null;
+            }
+            mechanism = mechanism.Trim().Replace('_', '-').Replace('/', '-').ToUpperInvariant();
+            switch (mechanism)
+            {
+                case "1.2.840.10045.4.1": case "SHA1WITHECDSA": case "SHA-1WITHECDSA": return X9ObjectIdentifiers.ECDsaWithSha1;
+                case "1.2.840.10045.4.3.1": case "SHA224WITHECDSA": case "SHA-224WITHECDSA": return X9ObjectIdentifiers.ECDsaWithSha224;
+                case "1.2.840.10045.4.3.2": case "SHA256WITHECDSA": case "SHA-256WITHECDSA": return X9ObjectIdentifiers.ECDsaWithSha256;
+                case "1.2.840.10045.4.3.3": case "SHA384WITHECDSA": case "SHA-384WITHECDSA": return X9ObjectIdentifiers.ECDsaWithSha384;
+                case "1.2.840.10045.4.3.4": case "SHA512WITHECDSA": case "SHA-512WITHECDSA": return X9ObjectIdentifiers.ECDsaWithSha512;
+                case "2.16.840.1.101.3.4.3.9": case "SHA3-224WITHECDSA": case "SHA-3-224WITHECDSA": return NistObjectIdentifiers.IdEcdsaWithSha3_224;
+                case "2.16.840.1.101.3.4.3.10": case "SHA3-256WITHECDSA": case "SHA-3-256WITHECDSA": return NistObjectIdentifiers.IdEcdsaWithSha3_256;
+                case "2.16.840.1.101.3.4.3.11": case "SHA3-384WITHECDSA": case "SHA-3-384WITHECDSA": return NistObjectIdentifiers.IdEcdsaWithSha3_384;
+                case "2.16.840.1.101.3.4.3.12": case "SHA3-512WITHECDSA": case "SHA-3-512WITHECDSA": return NistObjectIdentifiers.IdEcdsaWithSha3_512;
+
+                case "0.4.0.127.0.7.2.2.2.2.1": case "SHA1WITHCVC-ECDSA": case "SHA-1WITHCVC-ECDSA": return EacObjectIdentifiers.id_TA_ECDSA_SHA_1;
+                case "0.4.0.127.0.7.2.2.2.2.2": case "SHA224WITHCVC-ECDSA": case "SHA-224WITHCVC-ECDSA": return EacObjectIdentifiers.id_TA_ECDSA_SHA_224;
+                case "0.4.0.127.0.7.2.2.2.2.3": case "SHA256WITHCVC-ECDSA": case "SHA-256WITHCVC-ECDSA": return EacObjectIdentifiers.id_TA_ECDSA_SHA_256;
+                case "0.4.0.127.0.7.2.2.2.2.4": case "SHA384WITHCVC-ECDSA": case "SHA-384WITHCVC-ECDSA": return EacObjectIdentifiers.id_TA_ECDSA_SHA_384;
+                case "0.4.0.127.0.7.2.2.2.2.5": case "SHA512WITHCVC-ECDSA": case "SHA-512WITHCVC-ECDSA": return EacObjectIdentifiers.id_TA_ECDSA_SHA_512;
+
+                case "0.4.0.127.0.7.1.1.4.1.1": case "SHA1WITHPLAIN-ECDSA": case "SHA-1WITHPLAIN-ECDSA": return BsiObjectIdentifiers.ecdsa_plain_SHA1;
+                case "0.4.0.127.0.7.1.1.4.1.2": case "SHA224WITHPLAIN-ECDSA": case "SHA-224WITHPLAIN-ECDSA": return BsiObjectIdentifiers.ecdsa_plain_SHA224;
+                case "0.4.0.127.0.7.1.1.4.1.3": case "SHA256WITHPLAIN-ECDSA": case "SHA-256WITHPLAIN-ECDSA": return BsiObjectIdentifiers.ecdsa_plain_SHA256;
+                case "0.4.0.127.0.7.1.1.4.1.4": case "SHA384WITHPLAIN-ECDSA": case "SHA-384WITHPLAIN-ECDSA": return BsiObjectIdentifiers.ecdsa_plain_SHA384;
+                case "0.4.0.127.0.7.1.1.4.1.5": case "SHA512WITHPLAIN-ECDSA": case "SHA-512WITHPLAIN-ECDSA": return BsiObjectIdentifiers.ecdsa_plain_SHA512;
+                case "0.4.0.127.0.7.1.1.4.1.6": case "RIPEMD160WITHPLAIN-ECDSA": case "RIPEMD-160WITHPLAIN-ECDSA": return BsiObjectIdentifiers.ecdsa_plain_RIPEMD160;
+
+                case "1.2.840.113549.1.1.10": case "PSSWITHRSA": case "SHA1WITHRSAANDMGF1": case "SHA-1WITHRSAANDMGF1": return PkcsObjectIdentifiers.IdRsassaPss;
+                case "SHA224WITHRSAANDMGF1": case "SHA-224WITHRSAANDMGF1": return PkcsObjectIdentifiers.IdRsassaPss;
+                case "SHA256WITHRSAANDMGF1": case "SHA-256WITHRSAANDMGF1": return PkcsObjectIdentifiers.IdRsassaPss;
+                case "SHA384WITHRSAANDMGF1": case "SHA-384WITHRSAANDMGF1": return PkcsObjectIdentifiers.IdRsassaPss;
+                case "SHA512WITHRSAANDMGF1": case "SHA-512WITHRSAANDMGF1": return PkcsObjectIdentifiers.IdRsassaPss;
+
+                case "1.2.840.113549.1.1.2": case "MD2WITHRSA": return PkcsObjectIdentifiers.MD2WithRsaEncryption;
+                case "1.2.840.113549.1.1.4": case "MD5WITHRSA": return PkcsObjectIdentifiers.MD5WithRsaEncryption;
+                case "1.3.36.3.3.1.3": case "RIPEMD128WITHRSA": case "RIPEMD-128WITHRSA": return TeleTrusTObjectIdentifiers.RsaSignatureWithRipeMD128;
+                case "1.3.36.3.3.1.2": case "RIPEMD160WITHRSA": case "RIPEMD-160WITHRSA": return TeleTrusTObjectIdentifiers.RsaSignatureWithRipeMD160;
+                case "1.3.36.3.3.1.4": case "RIPEMD256WITHRSA": case "RIPEMD-256WITHRSA": return TeleTrusTObjectIdentifiers.RsaSignatureWithRipeMD256;
+                case "1.2.840.113549.1.1.5": case "SHA1WITHRSA": case "SHA-1WITHRSA": return PkcsObjectIdentifiers.Sha1WithRsaEncryption;
+                case "1.2.840.113549.1.1.14": case "SHA224WITHRSA": case "SHA-224WITHRSA": return PkcsObjectIdentifiers.Sha224WithRsaEncryption;
+                case "1.2.840.113549.1.1.11": case "SHA256WITHRSA": case "SHA-256WITHRSA": return PkcsObjectIdentifiers.Sha256WithRsaEncryption;
+                case "1.2.840.113549.1.1.12": case "SHA384WITHRSA": case "SHA-384WITHRSA": return PkcsObjectIdentifiers.Sha384WithRsaEncryption;
+                case "1.2.840.113549.1.1.13": case "SHA512WITHRSA": case "SHA-512WITHRSA": return PkcsObjectIdentifiers.Sha512WithRsaEncryption;
+                case "2.16.840.1.101.3.4.3.13": case "SHA3-224WITHRSA": case "SHA-3-224WITHRSA": return NistObjectIdentifiers.IdRsassaPkcs1V15WithSha3_224;
+                case "2.16.840.1.101.3.4.3.14": case "SHA3-256WITHRSA": case "SHA-3-256WITHRSA": return NistObjectIdentifiers.IdRsassaPkcs1V15WithSha3_256;
+                case "2.16.840.1.101.3.4.3.15": case "SHA3-384WITHRSA": case "SHA-3-384WITHRSA": return NistObjectIdentifiers.IdRsassaPkcs1V15WithSha3_384;
+                case "2.16.840.1.101.3.4.3.16": case "SHA3-512WITHRSA": case "SHA-3-512WITHRSA": return NistObjectIdentifiers.IdRsassaPkcs1V15WithSha3_512;
+
+                case "1.2.840.113549.1.1.15": case "SHA512-224WITHRSA": case "SHA-512-224WITHRSA": return PkcsObjectIdentifiers.Sha512_224WithRSAEncryption;
+                case "1.2.840.113549.1.1.16": case "SHA512-256WITHRSA": case "SHA-512-256WITHRSA": return PkcsObjectIdentifiers.Sha512_256WithRSAEncryption;
+
+                case "1.2.840.10040.4.3": case "SHA1WITHDSA": case "SHA-1WITHDSA": return X9ObjectIdentifiers.IdDsaWithSha1;
+                case "2.16.840.1.101.3.4.3.1": case "SHA224WITHDSA": case "SHA-224WITHDSA": return NistObjectIdentifiers.DsaWithSha224;
+                case "2.16.840.1.101.3.4.3.2": case "SHA256WITHDSA": case "SHA-256WITHDSA": return NistObjectIdentifiers.DsaWithSha256;
+                case "2.16.840.1.101.3.4.3.3": case "SHA384WITHDSA": case "SHA-384WITHDSA": return NistObjectIdentifiers.DsaWithSha384;
+                case "2.16.840.1.101.3.4.3.4": case "SHA512WITHDSA": case "SHA-512WITHDSA": return NistObjectIdentifiers.DsaWithSha512;
+                case "2.16.840.1.101.3.4.3.5": case "SHA3-224WITHDSA": case "SHA-3-224WITHDSA": return NistObjectIdentifiers.IdDsaWithSha3_224;
+                case "2.16.840.1.101.3.4.3.6": case "SHA3-256WITHDSA": case "SHA-3-256WITHDSA": return NistObjectIdentifiers.IdDsaWithSha3_256;
+                case "2.16.840.1.101.3.4.3.7": case "SHA3-384WITHDSA": case "SHA-3-384WITHDSA": return NistObjectIdentifiers.IdDsaWithSha3_384;
+                case "2.16.840.1.101.3.4.3.8": case "SHA3-512WITHDSA": case "SHA-3-512WITHDSA": return NistObjectIdentifiers.IdDsaWithSha3_512;
+
+                case "1.2.643.2.2.4": case "GOST3411WITHGOST3410": case "GOST3410": case "GOST3410-94": return CryptoProObjectIdentifiers.GostR3411x94WithGostR3410x94;
+
+                case "1.2.643.2.2.3": case "GOST3411WITHECGOST3410": case "ECGOST3410": case "ECGOST3410-2001": return CryptoProObjectIdentifiers.GostR3411x94WithGostR3410x2001;
+
+                case "1.2.156.10197.1.503": case "SHA256WITHSM2": case "SHA-256WITHSM2": return GMObjectIdentifiers.sm2sign_with_sha256;
+                case "1.2.156.10197.1.501": case "SM3WITHSM2": return GMObjectIdentifiers.sm2sign_with_sm3;
+
+                default: return null;
+            }
         }
     }
 }

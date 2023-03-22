@@ -88,6 +88,7 @@ namespace Honoo.BouncyCastle.NetStyles
 
         #endregion Construction
 
+        /// <inheritdoc/>
         public override void GenerateParameters()
         {
             int ivSize;
@@ -110,6 +111,79 @@ namespace Honoo.BouncyCastle.NetStyles
                 default: throw new CryptographicException("Unsupported cipher mode.");
             }
             GenerateParameters(_defaultKeySize, ivSize);
+        }
+
+        /// <inheritdoc/>
+        public override void ImportParameters(ICipherParameters parameters)
+        {
+            int keySize;
+            int ivSize;
+            ICipherParameters parameters1;
+            if (parameters.GetType() == typeof(AeadParameters))
+            {
+                AeadParameters parameters2 = (AeadParameters)parameters;
+                byte[] nonce = parameters2.GetNonce();
+                ivSize = nonce.Length * 8;
+                if (!ValidNonceSize(ivSize, out string exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                int macSize = parameters2.MacSize;
+                if (!ValidMacSize(macSize, out exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                byte[] key = parameters2.Key.GetKey();
+                keySize = key.Length * 8;
+                if (!ValidKeySize(keySize, out exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                parameters1 = new AeadParameters(GetKeyParameter(key), macSize, (byte[])nonce.Clone(), (byte[])parameters2.GetAssociatedText().Clone());
+            }
+            else if (parameters.GetType() == typeof(ParametersWithIV))
+            {
+                ParametersWithIV parameters2 = (ParametersWithIV)parameters;
+                byte[] iv = parameters2.GetIV();
+                ivSize = iv == null ? 0 : iv.Length * 8;
+                if (!ValidIVSize(ivSize, out string exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                byte[] key = ((KeyParameter)parameters2.Parameters).GetKey();
+                keySize = key.Length * 8;
+                if (!ValidKeySize(keySize, out exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                parameters1 = GetKeyParameter(key);
+                if (ivSize > 0)
+                {
+                    parameters1 = new ParametersWithIV(parameters1, iv);
+                }
+            }
+            else
+            {
+                KeyParameter parameter = (KeyParameter)parameters;
+                ivSize = 0;
+                if (!ValidIVSize(ivSize, out string exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                byte[] key = parameter.GetKey();
+                keySize = key.Length * 8;
+                if (!ValidKeySize(keySize, out exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                parameters1 = GetKeyParameter(key);
+            }
+            _parameters = parameters1;
+            _keySize = keySize;
+            _ivSize = ivSize;
+            _encryptor = null;
+            _decryptor = null;
+            _initialized = true;
         }
 
         /// <summary>

@@ -3,7 +3,7 @@
     /// <summary>
     /// Asymmetric signature algorithm interface.
     /// </summary>
-    public interface IAsymmetricSignatureAlgorithm : IAsymmetricParameters
+    public interface IAsymmetricSignatureAlgorithm : IAsymmetricAlgorithm
     {
         /// <summary>
         /// Get or set Hash algorithm for signature.

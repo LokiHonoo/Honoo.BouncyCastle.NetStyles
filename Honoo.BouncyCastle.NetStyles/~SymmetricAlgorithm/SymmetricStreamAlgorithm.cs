@@ -1,4 +1,6 @@
 ﻿using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
+using System.Security.Cryptography;
 
 namespace Honoo.BouncyCastle.NetStyles
 {
@@ -47,6 +49,61 @@ namespace Honoo.BouncyCastle.NetStyles
         public override void GenerateParameters()
         {
             GenerateParameters(_defaultKeySize, _defaultIVSize);
+        }
+
+        /// <inheritdoc/>
+        public override void ImportParameters(ICipherParameters parameters)
+        {
+            int keySize;
+            int ivSize;
+            ICipherParameters parameters1;
+            if (parameters.GetType() == typeof(AeadParameters))
+            {
+                throw new CryptographicException("AeadParameters not supported of symmetric stream algorithm.");
+            }
+            else if (parameters.GetType() == typeof(ParametersWithIV))
+            {
+                ParametersWithIV parameters2 = (ParametersWithIV)parameters;
+                byte[] iv = parameters2.GetIV();
+                ivSize = iv == null ? 0 : iv.Length * 8;
+                if (!ValidIVSize(ivSize, out string exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                byte[] key = ((KeyParameter)parameters2.Parameters).GetKey();
+                keySize = key.Length * 8;
+                if (!ValidKeySize(keySize, out exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                parameters1 = GetKeyParameter(key);
+                if (ivSize > 0)
+                {
+                    parameters1 = new ParametersWithIV(parameters1, iv);
+                }
+            }
+            else
+            {
+                KeyParameter parameter = (KeyParameter)parameters;
+                ivSize = 0;
+                if (!ValidIVSize(ivSize, out string exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                byte[] key = parameter.GetKey();
+                keySize = key.Length * 8;
+                if (!ValidKeySize(keySize, out exception))
+                {
+                    throw new CryptographicException(exception);
+                }
+                parameters1 = GetKeyParameter(key);
+            }
+            _parameters = parameters1;
+            _keySize = keySize;
+            _ivSize = ivSize;
+            _encryptor = null;
+            _decryptor = null;
+            _initialized = true;
         }
 
         /// <summary>

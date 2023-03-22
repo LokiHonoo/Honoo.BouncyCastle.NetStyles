@@ -31,20 +31,17 @@ namespace Honoo.BouncyCastle.NetStyles
             new KeySizes(521, 521, 0)
         };
 
-        //private AsymmetricKeyParameter _privateKey = null;
-        //private AsymmetricKeyParameter _publicKey = null;
-
         private ECDHBasicAgreement _agreementA = null;
         private ECDHBasicAgreement _agreementB = null;
         private byte[] _g = null;
-        private bool _initialized = false;
         private byte[] _p = null;
         private BigInteger _pmsB = null;
 
         private byte[] _publicKeyA = null;
         private byte[] _publicKeyB = null;
 
-        byte[] IKeyExchangeA.G
+        /// <inheritdoc/>
+        public byte[] G
         {
             get
             {
@@ -53,7 +50,8 @@ namespace Honoo.BouncyCastle.NetStyles
             }
         }
 
-        byte[] IKeyExchangeA.P
+        /// <inheritdoc/>
+        public byte[] P
         {
             get
             {
@@ -62,7 +60,8 @@ namespace Honoo.BouncyCastle.NetStyles
             }
         }
 
-        byte[] IKeyExchangeA.PublicKeyA
+        /// <inheritdoc/>
+        public byte[] PublicKeyA
         {
             get
             {
@@ -71,7 +70,8 @@ namespace Honoo.BouncyCastle.NetStyles
             }
         }
 
-        byte[] IKeyExchangeB.PublicKeyB => _publicKeyB;
+        /// <inheritdoc/>
+        public byte[] PublicKeyB => _publicKeyB;
 
         #endregion Properties
 
@@ -116,39 +116,14 @@ namespace Honoo.BouncyCastle.NetStyles
 
         #region GenerateParameters
 
-        void IKeyExchangeA.GenerateParameters()
+        /// <inheritdoc/>
+        public override void GenerateParameters()
         {
             GenerateParameters(DEFAULT_KEY_SIZE, DEFAULT_CERTAINTY);
         }
 
-        void IKeyExchangeA.GenerateParameters(int keySize, int certainty)
-        {
-            GenerateParameters(keySize, certainty);
-        }
-
-        void IKeyExchangeB.GenerateParameters(byte[] p, byte[] g, byte[] publicKeyA)
-        {
-            AsymmetricKeyParameter publicKeyAlice = PublicKeyFactory.CreateKey(publicKeyA);
-            DHParameters parameters = new DHParameters(new BigInteger(p), new BigInteger(g));
-            ECKeyPairGenerator generator = new ECKeyPairGenerator("ECDH");
-            DHKeyGenerationParameters generationParameters = new DHKeyGenerationParameters(Common.SecureRandom, parameters);
-            generator.Init(generationParameters);
-            AsymmetricCipherKeyPair keyPair = generator.GenerateKeyPair();
-            _agreementB = new ECDHBasicAgreement();
-            _agreementB.Init(keyPair.Private);
-            SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keyPair.Public);
-            _publicKeyB = publicKeyInfo.GetEncoded();
-            _pmsB = _agreementB.CalculateAgreement(publicKeyAlice);
-            //
-            _agreementA = null;
-            _p = null;
-            _g = null;
-            _publicKeyA = null;
-            //
-            _initialized = true;
-        }
-
-        private void GenerateParameters(int keySize, int certainty)
+        /// <inheritdoc/>
+        public void GenerateParameters(int keySize = 521, int certainty = 20)
         {
             if (!ValidKeySize(keySize, out string exception))
             {
@@ -159,10 +134,10 @@ namespace Honoo.BouncyCastle.NetStyles
                 throw new CryptographicException("Legal certainty is more than 0.");
             }
             DHParametersGenerator parametersGenerator = new DHParametersGenerator();
-            parametersGenerator.Init(keySize, certainty, Common.SecureRandom);
+            parametersGenerator.Init(keySize, certainty, Common.SecureRandom.Value);
             DHParameters parameters = parametersGenerator.GenerateParameters();
             ECKeyPairGenerator keyPairGenerator = new ECKeyPairGenerator("ECDH");
-            DHKeyGenerationParameters generationParameters = new DHKeyGenerationParameters(Common.SecureRandom, parameters);
+            DHKeyGenerationParameters generationParameters = new DHKeyGenerationParameters(Common.SecureRandom.Value, parameters);
             keyPairGenerator.Init(generationParameters);
             AsymmetricCipherKeyPair keyPair = keyPairGenerator.GenerateKeyPair();
             _agreementA = new ECDHBasicAgreement();
@@ -179,16 +154,41 @@ namespace Honoo.BouncyCastle.NetStyles
             _initialized = true;
         }
 
+        /// <inheritdoc/>
+        public void GenerateParameters(byte[] p, byte[] g, byte[] publicKeyA)
+        {
+            AsymmetricKeyParameter publicKeyAlice = PublicKeyFactory.CreateKey(publicKeyA);
+            DHParameters parameters = new DHParameters(new BigInteger(p), new BigInteger(g));
+            ECKeyPairGenerator generator = new ECKeyPairGenerator("ECDH");
+            DHKeyGenerationParameters generationParameters = new DHKeyGenerationParameters(Common.SecureRandom.Value, parameters);
+            generator.Init(generationParameters);
+            AsymmetricCipherKeyPair keyPair = generator.GenerateKeyPair();
+            _agreementB = new ECDHBasicAgreement();
+            _agreementB.Init(keyPair.Private);
+            SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keyPair.Public);
+            _publicKeyB = publicKeyInfo.GetEncoded();
+            _pmsB = _agreementB.CalculateAgreement(publicKeyAlice);
+            //
+            _agreementA = null;
+            _p = null;
+            _g = null;
+            _publicKeyA = null;
+            //
+            _initialized = true;
+        }
+
         #endregion GenerateParameters
 
         #region Derive
 
-        byte[] IKeyExchangeB.DeriveKeyMaterial(bool unsigned)
+        /// <inheritdoc/>
+        public byte[] DeriveKeyMaterial(bool unsigned)
         {
             return unsigned ? _pmsB.ToByteArrayUnsigned() : _pmsB.ToByteArray();
         }
 
-        byte[] IKeyExchangeA.DeriveKeyMaterial(byte[] publicKeyB, bool unsigned)
+        /// <inheritdoc/>
+        public byte[] DeriveKeyMaterial(byte[] publicKeyB, bool unsigned)
         {
             AsymmetricKeyParameter publicKeyBob = PublicKeyFactory.CreateKey(publicKeyB);
             BigInteger pmsA = _agreementA.CalculateAgreement(publicKeyBob);
@@ -196,6 +196,66 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         #endregion Derive
+
+        #region Export/Import Parameters
+
+        /// <summary>
+        /// Imports a byte array that represents asymmetric algorithm key information. Always throw <see cref="NotImplementedException"/>.
+        /// </summary>
+        /// <param name="keyInfo">A byte buffer that represents an asymmetric algorithm key.</param>
+        public override void ImportKeyInfo(byte[] keyInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Imports a byte array that represents asymmetric algorithm key information. Always throw <see cref="NotImplementedException"/>.
+        /// </summary>
+        /// <param name="privateKeyInfo">A byte buffer that represents an asymmetric algorithm private key.</param>
+        /// <param name="password">Using decrypt private key.</param>
+        public override void ImportKeyInfo(byte[] privateKeyInfo, string password)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Imports a <see cref="AsymmetricKeyParameter"/> that represents asymmetric algorithm key information. Always throw <see cref="NotImplementedException"/>.
+        /// </summary>
+        /// <param name="asymmetricKey">A <see cref="AsymmetricKeyParameter"/> that represents an asymmetric algorithm key.</param>
+        public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Imports a <see cref="AsymmetricCipherKeyPair"/> that represents asymmetric algorithm key pair information. Always throw <see cref="NotImplementedException"/>.
+        /// </summary>
+        /// <param name="keyPair">A <see cref="AsymmetricCipherKeyPair"/> that represents an asymmetric algorithm key pair.</param>
+        public override void ImportParameters(AsymmetricCipherKeyPair keyPair)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Imports a pem string that represents asymmetric algorithm private key information. Always throw <see cref="NotImplementedException"/>.
+        /// </summary>
+        /// <param name="keyPem">A pem string that represents an asymmetric algorithm private key.</param>
+        public override void ImportPem(string keyPem)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Imports a pem string that represents asymmetric algorithm private key information. Always throw <see cref="NotImplementedException"/>.
+        /// </summary>
+        /// <param name="privateKeyPem">A pem string that represents an asymmetric algorithm private private key.</param>
+        /// <param name="password">Using decrypt private key.</param>
+        public override void ImportPem(string privateKeyPem, string password)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion Export/Import Parameters
 
         /// <summary>
         /// Creates an instance of the algorithm.
@@ -228,14 +288,6 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static AsymmetricAlgorithmName GetAlgorithmName()
         {
             return new AsymmetricAlgorithmName(NAME, AsymmetricAlgorithmKind.KeyExchange, () => { return new ECDH(); });
-        }
-
-        private void InspectParameters()
-        {
-            if (!_initialized)
-            {
-                GenerateParameters(DEFAULT_KEY_SIZE, DEFAULT_CERTAINTY);
-            }
         }
     }
 }

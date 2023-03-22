@@ -14,7 +14,7 @@ namespace Honoo.BouncyCastle.NetStyles
         private static IBlockCipherPadding GetISO10126d2Padding()
         {
             IBlockCipherPadding padding = new ISO10126d2Padding();
-            padding.Init(Common.SecureRandom);
+            padding.Init(Common.SecureRandom.Value);
             return padding;
         }
     }

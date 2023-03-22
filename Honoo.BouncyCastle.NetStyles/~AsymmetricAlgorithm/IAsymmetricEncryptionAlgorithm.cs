@@ -3,7 +3,7 @@
     /// <summary>
     /// Asymmetric encryption algorithm interface.
     /// </summary>
-    public interface IAsymmetricEncryptionAlgorithm:IAsymmetricParameters
+    public interface IAsymmetricEncryptionAlgorithm:IAsymmetricAlgorithm
     {
         /// <summary>
         /// Gets legal input bytes length on decrypt.

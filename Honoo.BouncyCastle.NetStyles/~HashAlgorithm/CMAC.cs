@@ -94,6 +94,15 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <summary>
+        /// Exports a <see cref="ICipherParameters"/> containing the CMAC parameters information associated.
+        /// </summary>
+        /// <returns></returns>
+        public ICipherParameters ExportParameters()
+        {
+            return _core.ExportParameters();
+        }
+
+        /// <summary>
         /// Exports key.
         /// </summary>
         /// <param name="key">Output key bytes.</param>
@@ -119,6 +128,16 @@ namespace Honoo.BouncyCastle.NetStyles
         public void GenerateParameters(int keySize)
         {
             _core.GenerateParameters(keySize, 0);
+            _digest = null;
+        }
+
+        /// <summary>
+        /// Imports a <see cref="ICipherParameters"/> that represents CMAC parameters information.
+        /// </summary>
+        /// <param name="parameters">A BouncyCastle <see cref="ICipherParameters"/> that represents an CMAC parameters.</param>
+        public void ImportParameters(ICipherParameters parameters)
+        {
+            _core.ImportParameters(parameters);
             _digest = null;
         }
 

@@ -38,12 +38,12 @@ namespace Test
 
         private static void Demo1()
         {
-            SymmetricAlgorithm alg1 = SymmetricAlgorithm.Create(SymmetricAlgorithmName.Rijndael224);
+            SymmetricAlgorithm alg1 = SymmetricAlgorithm.Create(SymmetricAlgorithmName.Tnepres);
             alg1.Mode = SymmetricCipherMode.CTR;
             alg1.Padding = SymmetricPaddingMode.TBC;
-            Rijndael alg2 = new Rijndael(224) { Mode = SymmetricCipherMode.CTR, Padding = SymmetricPaddingMode.TBC };
-            byte[] key = new byte[160 / 8];  // 160 = Rijndael legal key size bits.
-            byte[] iv = new byte[224 / 8];   // 224 = CTR mode limit same as Rijndael block size bits.
+            Tnepres alg2 = new Tnepres() { Mode = SymmetricCipherMode.CTR, Padding = SymmetricPaddingMode.TBC };
+            byte[] key = new byte[512 / 8];  // 512 = Tnepres legal key size bits.
+            byte[] iv = new byte[128 / 8];   // 128 = CTR mode limit same as Rijndael block size bits.
             Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
             Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
             alg1.ImportParameters(key, iv);
@@ -195,6 +195,8 @@ namespace Test
                     alg1.GenerateParameters();
                     alg1.ExportParameters(out byte[] key, out byte[] iv);
                     alg2.ImportParameters(key, iv);
+                    var param = alg1.ExportParameters();
+                    alg2.ImportParameters(param);
                     alg1.EncryptFinal(_input);
                     byte[] enc = alg1.EncryptFinal(_input);
                     alg2.DecryptFinal(enc);

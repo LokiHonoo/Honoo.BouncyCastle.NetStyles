@@ -9,7 +9,6 @@ using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
-using Org.BouncyCastle.X509;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -25,9 +24,6 @@ namespace Honoo.BouncyCastle.NetStyles
 
         private const string NAME = "Ed448";
         private readonly byte[] _context;
-        private bool _initialized = false;
-        private AsymmetricKeyParameter _privateKey = null;
-        private AsymmetricKeyParameter _publicKey = null;
         private Ed448SignatureInstance _signatureInstance = Ed448SignatureInstance.Ed448;
         private ISigner _signer = null;
         private ISigner _verifier = null;
@@ -110,9 +106,9 @@ namespace Honoo.BouncyCastle.NetStyles
         #region GenerateParameters
 
         /// <inheritdoc/>
-        public void GenerateParameters()
+        public override void GenerateParameters()
         {
-            Ed448KeyGenerationParameters parameters = new Ed448KeyGenerationParameters(Common.SecureRandom);
+            Ed448KeyGenerationParameters parameters = new Ed448KeyGenerationParameters(Common.SecureRandom.Value);
             Ed448KeyPairGenerator generator = new Ed448KeyPairGenerator();
             generator.Init(parameters);
             AsymmetricCipherKeyPair keyPair = generator.GenerateKeyPair();
@@ -128,75 +124,23 @@ namespace Honoo.BouncyCastle.NetStyles
         #region Export/Import Parameters
 
         /// <inheritdoc/>
-        public byte[] ExportKeyInfo(bool includePrivate)
-        {
-            InspectParameters();
-            if (includePrivate)
-            {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(_privateKey);
-                return privateKeyInfo.GetEncoded();
-            }
-            else
-            {
-                SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(_publicKey);
-                return publicKeyInfo.GetEncoded();
-            }
-        }
-
-        /// <inheritdoc/>
-        public byte[] ExportKeyInfo(PBEAlgorithmName pbeAlgorithmName, string password)
-        {
-            InspectParameters();
-            byte[] salt = new byte[16];
-            Common.SecureRandom.NextBytes(salt);
-            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
-                pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
-            return enc.GetEncoded();
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(bool includePrivate)
-        {
-            InspectParameters();
-            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(asymmetricKey);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            InspectParameters();
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo)
+        public override void ImportKeyInfo(byte[] keyInfo)
         {
             Ed448PrivateKeyParameters privateKey = null;
             Ed448PublicKeyParameters publicKey = null;
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             try
             {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
-                privateKey = (Ed448PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                PrivateKeyInfo priInfo = PrivateKeyInfo.GetInstance(asn1);
+                privateKey = (Ed448PrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
                 publicKey = privateKey.GeneratePublicKey();
             }
             catch
             {
                 try
                 {
-                    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
-                    publicKey = (Ed448PublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                    SubjectPublicKeyInfo pubInfo = SubjectPublicKeyInfo.GetInstance(asn1);
+                    publicKey = (Ed448PublicKeyParameters)PublicKeyFactory.CreateKey(pubInfo);
                 }
                 catch
                 {
@@ -210,12 +154,12 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo, string password)
+        public override void ImportKeyInfo(byte[] privateKeyInfo, string password)
         {
-            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            Asn1Object asn1 = Asn1Object.FromByteArray(privateKeyInfo);
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
-            Ed448PrivateKeyParameters privateKey = (Ed448PrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            PrivateKeyInfo priInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
+            Ed448PrivateKeyParameters privateKey = (Ed448PrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
             Ed448PublicKeyParameters publicKey = privateKey.GeneratePublicKey();
             _privateKey = privateKey;
             _publicKey = publicKey;
@@ -225,9 +169,41 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem)
+        public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
         {
-            using (StringReader reader = new StringReader(pem))
+            Ed448PrivateKeyParameters privateKey = null;
+            Ed448PublicKeyParameters publicKey;
+            if (asymmetricKey.IsPrivate)
+            {
+                privateKey = (Ed448PrivateKeyParameters)asymmetricKey;
+                publicKey = privateKey.GeneratePublicKey();
+            }
+            else
+            {
+                publicKey = (Ed448PublicKeyParameters)asymmetricKey;
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+
+        /// <inheritdoc/>
+        public override void ImportParameters(AsymmetricCipherKeyPair keyPair)
+        {
+            _privateKey = (Ed448PrivateKeyParameters)keyPair.Private;
+            _publicKey = (Ed448PublicKeyParameters)keyPair.Public;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportPem(string keyPem)
+        {
+            using (StringReader reader = new StringReader(keyPem))
             {
                 Ed448PrivateKeyParameters privateKey = null;
                 Ed448PublicKeyParameters publicKey;
@@ -250,9 +226,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem, string password)
+        public override void ImportPem(string privateKeyPem, string password)
         {
-            using (StringReader reader = new StringReader(pem))
+            using (StringReader reader = new StringReader(privateKeyPem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
                 Ed448PrivateKeyParameters privateKey = (Ed448PrivateKeyParameters)obj;
@@ -367,7 +343,7 @@ namespace Honoo.BouncyCastle.NetStyles
 
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(Ed448SignatureInstance instance)
         {
-            return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(instance), () => { return new Ed448() { SignatureInstance = instance }; });
+            return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(instance), () => { return new Ed448() { _signatureInstance = instance }; });
         }
 
         private static string GetSignatureAlgorithmMechanism(Ed448SignatureInstance instance)
@@ -377,14 +353,6 @@ namespace Honoo.BouncyCastle.NetStyles
                 case Ed448SignatureInstance.Ed448: return "Ed448";
                 case Ed448SignatureInstance.Ed448ph: return "Ed448ph";
                 default: throw new CryptographicException("Unsupported signature EdDSA instance (RFC-8032).");
-            }
-        }
-
-        private void InspectParameters()
-        {
-            if (!_initialized)
-            {
-                GenerateParameters();
             }
         }
 

@@ -11,7 +11,6 @@ using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using Org.BouncyCastle.X509;
 using System;
 using System.IO;
 using System.Security.Cryptography;
@@ -31,11 +30,8 @@ namespace Honoo.BouncyCastle.NetStyles
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(8, Common.SizeMax, 8) };
         private IAsymmetricBlockCipher _decryptor = null;
         private IAsymmetricBlockCipher _encryptor = null;
-        private bool _initialized = false;
         private int _keySize = DEFAULT_KEY_SIZE;
         private AsymmetricEncryptionPaddingMode _padding = AsymmetricEncryptionPaddingMode.PKCS1;
-        private AsymmetricKeyParameter _privateKey = null;
-        private AsymmetricKeyParameter _publicKey = null;
 
         /// <inheritdoc/>
         public int DecryptInputLength
@@ -158,7 +154,7 @@ namespace Honoo.BouncyCastle.NetStyles
         #region GenerateParameters
 
         /// <inheritdoc/>
-        public void GenerateParameters()
+        public override void GenerateParameters()
         {
             GenerateParameters(DEFAULT_KEY_SIZE, DEFAULT_CERTAINTY);
         }
@@ -179,9 +175,9 @@ namespace Honoo.BouncyCastle.NetStyles
                 throw new CryptographicException("Legal certainty is more than 0.");
             }
             ElGamalParametersGenerator parametersGenerator = new ElGamalParametersGenerator();
-            parametersGenerator.Init(keySize, certainty, Common.SecureRandom);
+            parametersGenerator.Init(keySize, certainty, Common.SecureRandom.Value);
             ElGamalParameters parameters = parametersGenerator.GenerateParameters();
-            ElGamalKeyGenerationParameters generationParameters = new ElGamalKeyGenerationParameters(Common.SecureRandom, parameters);
+            ElGamalKeyGenerationParameters generationParameters = new ElGamalKeyGenerationParameters(Common.SecureRandom.Value, parameters);
             ElGamalKeyPairGenerator keyPairGenerator = new ElGamalKeyPairGenerator();
             keyPairGenerator.Init(generationParameters);
             AsymmetricCipherKeyPair keyPair = keyPairGenerator.GenerateKeyPair();
@@ -193,80 +189,20 @@ namespace Honoo.BouncyCastle.NetStyles
             _initialized = true;
         }
 
-        private void InspectParameters()
-        {
-            if (!_initialized)
-            {
-                GenerateParameters();
-            }
-        }
-
         #endregion GenerateParameters
 
         #region Export/Import Parameters
 
         /// <inheritdoc/>
-        public byte[] ExportKeyInfo(bool includePrivate)
-        {
-            InspectParameters();
-            if (includePrivate)
-            {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(_privateKey);
-                return privateKeyInfo.GetEncoded();
-            }
-            else
-            {
-                SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(_publicKey);
-                return publicKeyInfo.GetEncoded();
-            }
-        }
-
-        /// <inheritdoc/>
-        public byte[] ExportKeyInfo(PBEAlgorithmName pbeAlgorithmName, string password)
-        {
-            InspectParameters();
-            byte[] salt = new byte[16];
-            Common.SecureRandom.NextBytes(salt);
-            EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
-                pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
-            return enc.GetEncoded();
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(bool includePrivate)
-        {
-            InspectParameters();
-            AsymmetricKeyParameter asymmetricKey = includePrivate ? _privateKey : _publicKey;
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(asymmetricKey);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public string ExportPem(DEKAlgorithmName dekAlgorithmName, string password)
-        {
-            InspectParameters();
-            using (StringWriter writer = new StringWriter())
-            {
-                PemWriter pemWriter = new PemWriter(writer);
-                pemWriter.WriteObject(_privateKey, dekAlgorithmName.Name, password.ToCharArray(), Common.SecureRandom);
-                return writer.ToString();
-            }
-        }
-
-        /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo)
+        public override void ImportKeyInfo(byte[] keyInfo)
         {
             ElGamalPrivateKeyParameters privateKey = null;
             ElGamalPublicKeyParameters publicKey = null;
             Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
             try
             {
-                PrivateKeyInfo privateKeyInfo = PrivateKeyInfo.GetInstance(asn1);
-                privateKey = (ElGamalPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+                PrivateKeyInfo priInfo = PrivateKeyInfo.GetInstance(asn1);
+                privateKey = (ElGamalPrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
                 BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
                 publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
             }
@@ -274,8 +210,8 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 try
                 {
-                    SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfo.GetInstance(asn1);
-                    publicKey = (ElGamalPublicKeyParameters)PublicKeyFactory.CreateKey(publicKeyInfo);
+                    SubjectPublicKeyInfo pubInfo = SubjectPublicKeyInfo.GetInstance(asn1);
+                    publicKey = (ElGamalPublicKeyParameters)PublicKeyFactory.CreateKey(pubInfo);
                 }
                 catch
                 {
@@ -290,12 +226,12 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportKeyInfo(byte[] keyInfo, string password)
+        public override void ImportKeyInfo(byte[] privateKeyInfo, string password)
         {
-            Asn1Object asn1 = Asn1Object.FromByteArray(keyInfo);
+            Asn1Object asn1 = Asn1Object.FromByteArray(privateKeyInfo);
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfo.GetInstance(asn1);
-            PrivateKeyInfo privateKeyInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
-            ElGamalPrivateKeyParameters privateKey = (ElGamalPrivateKeyParameters)PrivateKeyFactory.CreateKey(privateKeyInfo);
+            PrivateKeyInfo priInfo = PrivateKeyInfoFactory.CreatePrivateKeyInfo(password.ToCharArray(), enc);
+            ElGamalPrivateKeyParameters privateKey = (ElGamalPrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
             BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
             ElGamalPublicKeyParameters publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
             _privateKey = privateKey;
@@ -307,9 +243,45 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem)
+        public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
         {
-            using (StringReader reader = new StringReader(pem))
+            ElGamalPrivateKeyParameters privateKey = null;
+            ElGamalPublicKeyParameters publicKey;
+            if (asymmetricKey.IsPrivate)
+            {
+                privateKey = (ElGamalPrivateKeyParameters)asymmetricKey;
+                BigInteger y = privateKey.Parameters.G.ModPow(privateKey.X, privateKey.Parameters.P);
+                publicKey = new ElGamalPublicKeyParameters(y, privateKey.Parameters);
+            }
+            else
+            {
+                publicKey = (ElGamalPublicKeyParameters)asymmetricKey;
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Parameters.P.BitLength;
+            _encryptor = null;
+            _decryptor = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportParameters(AsymmetricCipherKeyPair keyPair)
+        {
+            ElGamalPrivateKeyParameters privateKey = (ElGamalPrivateKeyParameters)keyPair.Private;
+            ElGamalPublicKeyParameters publicKey = (ElGamalPublicKeyParameters)keyPair.Public;
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Parameters.P.BitLength;
+            _encryptor = null;
+            _decryptor = null;
+            _initialized = true;
+        }
+
+        /// <inheritdoc/>
+        public override void ImportPem(string keyPem)
+        {
+            using (StringReader reader = new StringReader(keyPem))
             {
                 ElGamalPrivateKeyParameters privateKey = null;
                 ElGamalPublicKeyParameters publicKey;
@@ -334,9 +306,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void ImportPem(string pem, string password)
+        public override void ImportPem(string privateKeyPem, string password)
         {
-            using (StringReader reader = new StringReader(pem))
+            using (StringReader reader = new StringReader(privateKeyPem))
             {
                 object obj = new PemReader(reader, new Password(password)).ReadObject();
                 ElGamalPrivateKeyParameters privateKey = (ElGamalPrivateKeyParameters)obj;

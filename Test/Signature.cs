@@ -1,4 +1,6 @@
 ﻿using Honoo.BouncyCastle.NetStyles;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Operators;
 using System;
 using System.Collections.Generic;
 
@@ -21,6 +23,7 @@ namespace Test
             _total = 0;
             _diff = 0;
             _ignore = 0;
+
             Demo();
             DoDSA();
             DoRSA();
@@ -28,6 +31,7 @@ namespace Test
             DoEd25519();
             DoEd448();
             DoAll();
+            DoAsn1();
             Console.WriteLine();
             Console.WriteLine();
             Console.WriteLine($"Total= {_total}  Diff= {_diff}  Ignore= {_ignore}");
@@ -38,12 +42,13 @@ namespace Test
         {
             ECDSA alg1 = (ECDSA)AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA);
             string pem = alg1.ExportPem(false);
+            byte[] signature = alg1.SignFinal(_input);
+
             if (SignatureAlgorithmName.TryGetAlgorithmName("sha256withecdsa", out SignatureAlgorithmName name))
             {
                 IAsymmetricSignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
                 alg2.ImportPem(pem);
 
-                byte[] signature = alg1.SignFinal(_input);
                 alg2.VerifyUpdate(_input);
                 bool same = alg2.VerifyFinal(signature);
                 WriteResult(alg1.SignatureAlgorithm, same);
@@ -72,6 +77,10 @@ namespace Test
                 SignatureAlgorithmName.TryGetAlgorithmName(algorithmName.Name, out SignatureAlgorithmName algorithmName2);
                 var alg1 = AsymmetricAlgorithm.Create(algorithmName).GetSignatureInterface();
                 var alg2 = AsymmetricAlgorithm.Create(algorithmName2).GetSignatureInterface();
+                var pirKey = alg1.ExportParameters(true);
+                var pubKey = alg1.ExportParameters(false);
+                alg2.ImportParameters(pirKey);
+                alg2.ImportParameters(pubKey);
                 string pem1 = alg1.ExportPem(DEKAlgorithmName.DES_EDE3_OFB, "12345");
                 string pem2 = alg1.ExportPem(true);
                 string pem3 = alg1.ExportPem(false);
@@ -84,9 +93,44 @@ namespace Test
                 alg2.ImportKeyInfo(keyInfo1, "12345");
                 alg2.ImportKeyInfo(keyInfo2);
                 alg2.ImportKeyInfo(keyInfo3);
+                alg1.SignFinal(_input);
                 byte[] signature = alg1.SignFinal(_input);
+                alg2.VerifyFinal(_input, signature);
+                alg2.VerifyFinal(_input, signature);
                 bool same = alg2.VerifyFinal(_input, signature);
                 WriteResult(alg1.SignatureAlgorithm, same);
+            }
+        }
+
+        private static void DoAsn1()
+        {
+            var algorithmNames = new List<SignatureAlgorithmName>();
+            string[] mechanisms = new string[]
+            {
+                "SHA1withRSAandMGF1",
+                "SHA224withRSAandMGF1",
+                "SHA256withRSAandMGF1",
+                "SHA384withRSAandMGF1",
+                "SHA512withRSAandMGF1",
+            };
+            foreach (var mechanism in mechanisms)
+            {
+                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
+                algorithmNames.Add(algorithmName);
+            }
+            foreach (SignatureAlgorithmName algorithmName in algorithmNames)
+            {
+                _total++;
+                var alg = AsymmetricAlgorithm.Create(algorithmName).GetSignatureInterface();
+                byte[] keyInfo = alg.ExportKeyInfo(true);
+                AsymmetricKeyParameter privateKey = Org.BouncyCastle.Security.PrivateKeyFactory.CreateKey(keyInfo);
+                Asn1SignatureFactory signatureFactory = new Asn1SignatureFactory(algorithmName.Name, privateKey, Common.Random);
+                var clac = signatureFactory.CreateCalculator();
+                clac.Stream.Write(_input, 0, _input.Length);
+                var result = (DefaultSignatureResult)clac.GetResult();
+                byte[] signature = result.Collect();
+                bool same = alg.VerifyFinal(_input, signature);
+                WriteResult($"{alg.SignatureAlgorithm} ASN1 Verify", same);
             }
         }
 
@@ -96,8 +140,8 @@ namespace Test
             var parameters = net.ExportParameters(true);
             DSA alg1 = new DSA() { HashAlgorithm = HashAlgorithmName.SHA1, SignatureEncoding = DSASignatureEncodingMode.Plain };
             DSA alg2 = new DSA() { HashAlgorithm = HashAlgorithmName.SHA1, SignatureEncoding = DSASignatureEncodingMode.Plain };
-            alg1.ImportParameters(parameters);
-            alg2.ImportParameters(parameters);
+            alg1.ImportNetParameters(parameters);
+            alg2.ImportNetParameters(parameters);
             {
                 _total++;
                 byte[] signature = alg1.SignFinal(_input);
@@ -173,8 +217,8 @@ namespace Test
             var net = new System.Security.Cryptography.RSACryptoServiceProvider();
             RSA alg1 = new RSA() { HashAlgorithm = HashAlgorithmName.SHA512 };
             RSA alg2 = new RSA() { HashAlgorithm = HashAlgorithmName.SHA512 };
-            var parameters = alg1.ExportParameters(true);
-            alg2.ImportParameters(parameters);
+            var parameters = alg1.ExportNetParameters(true);
+            alg2.ImportNetParameters(parameters);
             net.ImportParameters(parameters);
             {
                 _total++;
@@ -204,7 +248,7 @@ namespace Test
 
         private static void WriteResult(string title, bool same)
         {
-            string message = (title + " ").PadRight(30, '-');
+            string message = (title + " ").PadRight(40, '-');
             if (same)
             {
                 Console.WriteLine($"{message} same");

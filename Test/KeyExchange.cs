@@ -16,7 +16,7 @@ namespace Test
         {
             IKeyExchangeA keA = new ECDH().GetKeyExchangeAInterface();
             IKeyExchangeB keB = new ECDH().GetKeyExchangeBInterface();
-
+       
             // Alice work
             keA.GenerateParameters(384);
             byte[] p = keA.P;

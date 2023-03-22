@@ -68,6 +68,16 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <summary>
+        /// Exports a <see cref="ICipherParameters"/> containing the HMAC parameters information associated.
+        /// </summary>
+        /// <returns></returns>
+        public ICipherParameters ExportParameters()
+        {
+            InspectParameters();
+            return _parameters;
+        }
+
+        /// <summary>
         /// Exports key.
         /// </summary>
         /// <param name="key">Output key bytes.</param>
@@ -84,7 +94,7 @@ namespace Honoo.BouncyCastle.NetStyles
         public void GenerateParameters()
         {
             byte[] key = new byte[DEFAULT_KEY_SIZE / 8];
-            Common.SecureRandom.NextBytes(key);
+            Common.SecureRandom.Value.NextBytes(key);
             _parameters = new KeyParameter(key);
             _keySize = DEFAULT_KEY_SIZE;
             _digest = null;
@@ -102,7 +112,25 @@ namespace Honoo.BouncyCastle.NetStyles
                 throw new CryptographicException(exception);
             }
             byte[] key = new byte[keySize / 8];
-            Common.SecureRandom.NextBytes(key);
+            Common.SecureRandom.Value.NextBytes(key);
+            _parameters = new KeyParameter(key);
+            _keySize = keySize;
+            _digest = null;
+            _initialized = true;
+        }
+
+        /// <summary>
+        /// Imports a <see cref="ICipherParameters"/> that represents HMAC parameters information.
+        /// </summary>
+        /// <param name="parameters">A BouncyCastle <see cref="ICipherParameters"/> that represents an HMAC parameters.</param>
+        public void ImportParameters(ICipherParameters parameters)
+        {
+            byte[] key = ((KeyParameter)parameters).GetKey();
+            int keySize = key.Length * 8;
+            if (!ValidKeySize(keySize, out string exception))
+            {
+                throw new CryptographicException(exception);
+            }
             _parameters = new KeyParameter(key);
             _keySize = keySize;
             _digest = null;

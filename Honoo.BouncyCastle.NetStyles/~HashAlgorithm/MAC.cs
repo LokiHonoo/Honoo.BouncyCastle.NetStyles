@@ -132,6 +132,15 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <summary>
+        /// Exports a <see cref="ICipherParameters"/> containing the MAC parameters information associated.
+        /// </summary>
+        /// <returns></returns>
+        public ICipherParameters ExportParameters()
+        {
+            return _core.ExportParameters();
+        }
+
+        /// <summary>
         /// Exports key and iv.
         /// </summary>
         /// <param name="key">Output key bytes.</param>
@@ -161,6 +170,16 @@ namespace Honoo.BouncyCastle.NetStyles
         public void GenerateParameters(int keySize, int ivSize)
         {
             _core.GenerateParameters(keySize, ivSize);
+            _digest = null;
+        }
+
+        /// <summary>
+        /// Imports a <see cref="ICipherParameters"/> that represents MAC parameters information.
+        /// </summary>
+        /// <param name="parameters">A BouncyCastle <see cref="ICipherParameters"/> that represents an MAC parameters.</param>
+        public void ImportParameters(ICipherParameters parameters)
+        {
+            _core.ImportParameters(parameters);
             _digest = null;
         }
 
