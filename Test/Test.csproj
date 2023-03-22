@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Honoo.BouncyCastle\Honoo.BouncyCastle.csproj" />
+    <ProjectReference Include="..\Honoo.BouncyCastle.NetStyles\Honoo.BouncyCastle.NetStyles.csproj" />
   </ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

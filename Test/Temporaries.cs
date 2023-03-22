@@ -1,5 +1,6 @@
-﻿using Honoo.BouncyCastle;
-using System;
+﻿using System;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Test
 {
@@ -7,33 +8,81 @@ namespace Test
     {
         internal static void Test()
         {
-            ECGOST3410 alg1 = new ECGOST3410();
-            ECGOST3410 alg2 = new ECGOST3410();
-            string pem1 = alg1.ExportPem(DEKAlgorithmName.RC2_64_OFB, "12345");
-            string pem2 = alg1.ExportPem(true);
-            string pem3 = alg1.ExportPem(false);
-            alg2.ImportPem(pem1, "12345");
-            alg2.ImportPem(pem2);
-            alg2.ImportPem(pem3);
-            byte[] info1 = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
-            byte[] info2 = alg1.ExportKeyInfo(true);
-            byte[] info3 = alg1.ExportKeyInfo(false);
-            alg2.ImportKeyInfo(info1, "12345");
-            alg2.ImportKeyInfo(info2);
-            alg2.ImportKeyInfo(info3);
+            byte[] bbb1 = new byte[33];
+            byte[] bbb2 = new byte[33];
+            Common.Random.NextBytes(bbb1);
+            Common.Random.NextBytes(bbb2);
+            Stopwatch stopwatch = new Stopwatch();
 
-            var ccc = (ECGOST3410EllipticCurve[])Enum.GetValues(typeof(ECGOST3410EllipticCurve));
-            foreach (var item in ccc)
+            stopwatch.Restart();
+            for (int i = 0; i < 10009090; i++)
             {
-                alg1.GenerateParameters(item);
-                byte[] info = alg1.ExportKeyInfo(PBEAlgorithmName.PBEwithSHAand3KeyDESedeCBC, "12345");
-                alg2.ImportKeyInfo(info, "12345");
-                info = alg1.ExportKeyInfo(true);
-                alg2.ImportKeyInfo(info);
-                info = alg1.ExportKeyInfo(false);
-                alg2.ImportKeyInfo(info);
+                bbb1.SequenceEqual(bbb2);
             }
-             Console.ReadKey(true);
+            stopwatch.Stop();
+            Console.WriteLine("SequenceEqual 10990000 times : " + stopwatch.ElapsedMilliseconds + " milliseconds");
+
+            stopwatch.Restart();
+            for (int i = 0; i < 10000990; i++)
+            {
+                Compare(bbb1,0, bbb2,0,33);
+            }
+            stopwatch.Stop();
+            Console.WriteLine("Compare 10099000 times : " + stopwatch.ElapsedMilliseconds + " milliseconds");
+
+            stopwatch.Restart();
+            for (int i = 0; i < 10009090; i++)
+            {
+                Compare2(bbb1, bbb2);
+            }
+            stopwatch.Stop();
+            Console.WriteLine("Compare2 10099000 times : " + stopwatch.ElapsedMilliseconds + " milliseconds");
+            Console.ReadKey(true);
+        }
+
+        private static bool Compare(byte[] first, int firstOffset, byte[] second, int secondOffset, int length)
+        {
+            if (first.Length - firstOffset >= length && second.Length - secondOffset >= length)
+            {
+                for (int i = 0; i < length; i++)
+                {
+                    if (first[firstOffset + i] != second[secondOffset + i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 比较字节数组。
+        /// </summary>
+        /// <param name="bytesA"></param>
+        /// <param name="bytesB"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception" />
+        public static bool Compare2(byte[] bytesA, byte[] bytesB)
+        {
+            if (bytesA.Length == bytesB.Length)
+            {
+                for (int i = 0; i < bytesA.Length; i++)
+                {
+                    if (bytesA[i] != bytesB[i])
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

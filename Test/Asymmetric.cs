@@ -1,4 +1,4 @@
-﻿using Honoo.BouncyCastle;
+﻿using Honoo.BouncyCastle.NetStyles;
 using System;
 using System.Linq;
 using System.Text;
@@ -22,7 +22,8 @@ namespace Test
             _total = 0;
             _diff = 0;
             _ignore = 0;
-            Demo();
+            Demo1();
+            Demo2();
             DoDSA();
             DoRSA();
             DoElGamal();
@@ -32,7 +33,7 @@ namespace Test
             Console.ReadKey(true);
         }
 
-        private static void Demo()
+        private static void Demo1()
         {
             RSA rsa1 = new RSA();
             string pem = rsa1.ExportPem(false);
@@ -41,7 +42,21 @@ namespace Test
             rsa2.ImportPem(pem);
 
             byte[] enc = rsa2.Encrypt(_input);
-            _ = rsa1.Decrypt(enc);
+            byte[] dec = rsa1.Decrypt(enc);
+            WriteResult("RSA DEMO", _input, enc, dec);
+        }
+
+        private static void Demo2()
+        {
+            IAsymmetricEncryptionAlgorithm elGamal1 = new ElGamal().GetEncryptionInterface();
+            byte[] keyInfo = elGamal1.ExportKeyInfo(false);
+
+            IAsymmetricEncryptionAlgorithm elGamal2 = (IAsymmetricEncryptionAlgorithm)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.ElGamal);
+            elGamal2.ImportKeyInfo(keyInfo);
+
+            byte[] enc = elGamal2.Encrypt(_input);
+            byte[] dec = elGamal1.Decrypt(enc);
+            WriteResult("ElGamal DEMO", _input, enc, dec);
         }
 
         private static void DoDSA()

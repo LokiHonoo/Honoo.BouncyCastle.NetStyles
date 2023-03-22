@@ -1,10 +1,10 @@
-# Honoo.BouncyCastle.Helpers
+# Honoo.BouncyCastle.NetStyles
 
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
 <!-- code_chunk_output -->
 
-- [Honoo.BouncyCastle.Helpers](#honoobouncycastlehelpers)
+- [Honoo.BouncyCastle.NetStyles](#honoobouncycastlenetstyles)
   - [INTRODUCTION](#introduction)
   - [USAGE](#usage)
     - [NuGet](#nuget)
@@ -31,13 +31,13 @@ BouncyCastle's helpers. Refactoring by System.Security.Cryptography code styles.
 
 ### NuGet
 
-<https://www.nuget.org/packages/Honoo.BouncyCastle/>
+<https://www.nuget.org/packages/Honoo.BouncyCastle.NetStyles/>
 
 ### Namespace
 
 ```c#
 
-using Honoo.BouncyCastle;
+using Honoo.BouncyCastle.NetStyles;
 
 ```
 
@@ -48,7 +48,11 @@ using Honoo.BouncyCastle;
 private static void Demo1()
 {
     SHA1 sha1 = new SHA1();
-    _ = sha1.ComputeHash(_input);
+    _ = sha1.ComputeFinal(_input);
+
+    HashAlgorithm sha256 = HashAlgorithm.Create(HashAlgorithmName.SHA256);
+    sha256.Update(_input);
+    _ = sha256.ComputeFinal();
 }
 
 ```
@@ -59,7 +63,14 @@ private static void Demo1()
 
 private static void Demo2()
 {
-
+    HMAC hmac1 = HMAC.Create(HMACName.HMAC_SM3);
+    byte[] key = new byte[66]; // Any length.
+    Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+    hmac1.ImportParameters(key);
+    _ = hmac1.ComputeHash(_input);
+    HMAC hmac2 = HMAC.Create(HMACName.HMAC_SM3);
+    hmac2.ImportParameters(key);
+    _ = hmac2.ComputeHash(_input);
 }
 
 ```
@@ -70,7 +81,14 @@ private static void Demo2()
 
 private static void Demo3()
 {
-
+    CMAC cmac1 = CMAC.Create(CMACName.AES_CMAC);
+    byte[] key = new byte[192 / 8]; // 192 = AES legal key size bits.
+    Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+    cmac1.ImportParameters(key);
+    _ = cmac1.ComputeHash(_input);
+    CMAC cmac2 = CMAC.Create(CMACName.AES_CMAC);
+    cmac2.ImportParameters(key);
+    _ = cmac2.ComputeHash(_input);
 }
 
 ```
@@ -81,7 +99,18 @@ private static void Demo3()
 
 private static void Demo4()
 {
-
+    MAC mac1 = MAC.Create(MACName.Rijndael224_MAC);
+    mac1.Mode = SymmetricCipherMode.CBC;
+    mac1.Padding = SymmetricPaddingMode.TBC;
+    byte[] key = new byte[160 / 8];  // 160 = Rijndael legal key size bits.
+    byte[] iv = new byte[224 / 8];   // 224 = CBC mode limit same as Rijndael block size bits.
+    Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+    Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
+    mac1.ImportParameters(key, iv);
+    _ = mac1.ComputeHash(_input);
+    MAC mac2 = MAC.Create(MACName.Rijndael224_MAC);
+    mac2.ImportParameters(key, iv);
+    _ = mac2.ComputeHash(_input);
 }
 
 ```
@@ -92,44 +121,32 @@ private static void Demo4()
 
 private static void Demo1()
 {
-    AES alg1 = new AES { Mode = SymmetricCipherMode.CTR, Padding = SymmetricPaddingMode.TBC };
-    AES alg2 = new AES { Mode = SymmetricCipherMode.CTR, Padding = SymmetricPaddingMode.TBC };
-    byte[] key = new byte[16];
-    byte[] iv = new byte[16];
-    Common.SecureRandom.NextBytes(key);
-    Common.SecureRandom.NextBytes(iv);
-    alg1.GenerateParameters(key, iv);
-    alg2.GenerateParameters(key, iv);
+    SymmetricAlgorithm alg1 = SymmetricAlgorithm.Create(SymmetricAlgorithmName.Rijndael224);
+    alg1.Mode = SymmetricCipherMode.CTR;
+    alg1.Padding = SymmetricPaddingMode.TBC;
+    Rijndael alg2 = new Rijndael(224) { Mode = SymmetricCipherMode.CTR, Padding = SymmetricPaddingMode.TBC };
+    byte[] key = new byte[160 / 8];  // 160 = Rijndael legal key size bits.
+    byte[] iv = new byte[224 / 8];   // 224 = CTR mode limit same as Rijndael block size bits.
+    Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+    Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
+    alg1.ImportParameters(key, iv);
+    alg2.ImportParameters(key, iv);
     byte[] enc = alg1.EncryptFinal(_input);
-    byte[] dec = alg2.DecryptFinal(enc);
-}
-
-private static void Demo2()
-{
-    AES alg1 = new AES { Mode = SymmetricCipherMode.EAX, Padding = SymmetricPaddingMode.NoPadding };
-    AES alg2 = new AES { Mode = SymmetricCipherMode.EAX, Padding = SymmetricPaddingMode.NoPadding };
-    byte[] key = new byte[16];
-    byte[] nonce = new byte[22];
-    Common.SecureRandom.NextBytes(key);
-    Common.SecureRandom.NextBytes(nonce);
-    alg1.GenerateParameters(key, nonce, 64, new byte[] { 0x01, 0x02, 0x03 });
-    alg2.GenerateParameters(key, nonce, 64, new byte[] { 0x01, 0x02, 0x03 });
-    byte[] enc = alg1.EncryptFinal(_input);
-    byte[] dec = alg2.DecryptFinal(enc);
+    _ = alg2.DecryptFinal(enc);
 }
 
 private static void Demo3()
 {
-    H128 alg1 = new H128();
-    H128 alg2 = new H128();
-    byte[] key = new byte[16];
-    byte[] iv = new byte[16];
-    Common.SecureRandom.NextBytes(key);
-    Common.SecureRandom.NextBytes(iv);
-    alg1.GenerateParameters(key, iv);
-    alg2.GenerateParameters(key, iv);
+    SymmetricAlgorithm alg1 = SymmetricAlgorithm.Create(SymmetricAlgorithmName.HC128);
+    HC128 alg2 = new HC128();
+    byte[] key = new byte[128 / 8];  // 128 = HC128 legal key size bits.
+    byte[] iv = new byte[128 / 8];   // 256 = HC128 legal iv size bits.
+    Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+    Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
+    alg1.ImportParameters(key, iv);
+    alg2.ImportParameters(key, iv);
     byte[] enc = alg1.EncryptFinal(_input);
-    byte[] dec = alg2.DecryptFinal(enc);
+    _ = alg2.DecryptFinal(enc);
 }
 
 ```
@@ -140,15 +157,26 @@ private static void Demo3()
 
 private static void Demo1()
 {
-    RSA rsa1 = new RSA { Padding = AsymmetricPaddingMode.ISO9796_1 };
-    rsa1.GenerateKeyPair(512);
+    RSA rsa1 = new RSA();
     string pem = rsa1.ExportPem(false);
 
-    RSA rsa2 = new RSA { Padding = AsymmetricPaddingMode.ISO9796_1 };
+    RSA rsa2 = (RSA)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.RSA);
     rsa2.ImportPem(pem);
 
     byte[] enc = rsa2.Encrypt(_input);
     _ = rsa1.Decrypt(enc);
+}
+
+private static void Demo2()
+{
+    IAsymmetricEncryptionAlgorithm elGamal1 = new ElGamal().GetEncryptionInterface();
+    byte[] keyInfo = elGamal1.ExportKeyInfo(false);
+
+    IAsymmetricEncryptionAlgorithm elGamal2 = (IAsymmetricEncryptionAlgorithm)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.ElGamal);
+    elGamal1.ImportKeyInfo(keyInfo);
+
+    byte[] enc = elGamal2.Encrypt(_input);
+    _ = elGamal1.Decrypt(enc);
 }
 
 ```
@@ -157,22 +185,19 @@ private static void Demo1()
 
 ```c#
 
-private static void Demo1()
+private static void Demo()
 {
-    RSA rsa1 = new RSA()
+    ECDSA alg1 = (ECDSA)AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA);
+    string pem = alg1.ExportPem(false);
+    if (SignatureAlgorithmName.TryGetAlgorithmName("sha256withecdsa", out SignatureAlgorithmName name))
     {
-        SignaturePadding = RSASignaturePaddingMode.PKCS1,
-        HashAlgorithm = HashAlgorithmName.SHA384
-    };
-    RSA rsa2 = new RSA()
-    {
-        SignaturePadding = RSASignaturePaddingMode.PKCS1,
-        HashAlgorithm = HashAlgorithmName.SHA384
-    };
-    var pem = rsa1.ExportPem(false);
-    rsa2.ImportPem(pem);
-    byte[] signature = rsa1.SignFinal(_input);
-    _ = rsa2.VerifyFinal(_input, signature);
+        IAsymmetricSignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
+        alg2.ImportPem(pem);
+
+        byte[] signature = alg1.SignFinal(_input);
+        alg2.VerifyUpdate(_input);
+        _ = alg2.VerifyFinal(signature);
+    }
 }
 
 ```
@@ -181,129 +206,36 @@ private static void Demo1()
 
 ```c#
 
-private static void Demo()
-{
-    string caSignatureAlgorithmName = "SHA512withECDSA";
-    string userSignatureAlgorithmName = "SHA256withECDSA";
-    //
-    // CA build self.
-    //
-    _ = SignatureAlgorithmHelper.TryGetAlgorithm(caSignatureAlgorithmName, out ISignatureAlgorithm caSignatureAlgorithm);
-    AsymmetricCipherKeyPair caKeyPair = caSignatureAlgorithm.AsymmetricAlgorithm.GenerateKeyPair();
-    //
-    X509NameEntity[] caDN = new X509NameEntity[]
-    {
-        new X509NameEntity(X509NameLabel.C,"CN"),
-        new X509NameEntity(X509NameLabel.CN,"TEST Root CA")
-    };
-    X509ExtensionEntity[] caExtensions = new X509ExtensionEntity[]
-    {
-        new X509ExtensionEntity(X509ExtensionLabel.BasicConstraints, true, new BasicConstraints(false)),
-        new X509ExtensionEntity(X509ExtensionLabel.KeyUsage, true, new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.CrlSign))
-    };
-    X509Certificate caCert = X509Helper.GenerateIssuerCertificate(caSignatureAlgorithm,
-                                                                    caKeyPair,
-                                                                    caDN,
-                                                                    caExtensions,
-                                                                    DateTime.UtcNow.AddDays(-3),
-                                                                    DateTime.UtcNow.AddDays(120));
-    X509RevocationEntity[] revocationEntities = new X509RevocationEntity[]
-    {
-        new X509RevocationEntity(new BigInteger("12345678901"), DateTime.UtcNow.AddDays(-2), null),
-        new X509RevocationEntity(new BigInteger("12345678902"), DateTime.UtcNow.AddDays(-2), null)
-    };
-
-    X509Crl caCrl = X509Helper.GenerateCrl(caSignatureAlgorithm,
-                                            caKeyPair.Private,
-                                            caCert,
-                                            revocationEntities,
-                                            null,
-                                            DateTime.UtcNow.AddDays(-2),
-                                            DateTime.UtcNow.AddDays(30));
-    //
-    // User create csr and sand to CA.
-    //
-    AsymmetricCipherKeyPair userKeyPair = SignatureAlgorithms.GOST3411withECGOST3410.AsymmetricAlgorithm.GenerateKeyPair();
-    X509NameEntity[] userDN = new X509NameEntity[]
-    {
-        new X509NameEntity(X509NameLabel.C,"CN"),
-        new X509NameEntity(X509NameLabel.CN,"TEST User")
-    };
-    X509ExtensionEntity[] userExtensions = null;
-    Pkcs10CertificationRequest userCsr = X509Helper.GenerateCsr(SignatureAlgorithms.GOST3411withECGOST3410, userKeyPair, userDN, userExtensions);
-    //
-    // CA extract csr and create user cert.
-    //
-    X509Helper.ExtractCsr(userCsr,
-                            out AsymmetricKeyParameter userPublicKey,
-                            out IList<X509NameEntity> userDNExtracted,
-                            out IList<X509ExtensionEntity> userExtensionsExtracted);
-    X509Certificate userCert = X509Helper.GenerateSubjectCertificate(userSignatureAlgorithmName,
-                                                                        caKeyPair.Private,
-                                                                        caCert,
-                                                                        userPublicKey,
-                                                                        userDNExtracted,
-                                                                        userExtensionsExtracted,
-                                                                        DateTime.UtcNow.AddDays(-1),
-                                                                        DateTime.UtcNow.AddDays(90));
-    //
-    //
-    // Print
-    //
-    Console.WriteLine("====  CA Cert  ===========================");
-    Console.WriteLine(caCert.ToString());
-    Console.WriteLine("====  CA Crl  ============================");
-    Console.WriteLine(caCrl.ToString());
-    Console.WriteLine("====  User Cert  =========================");
-    Console.WriteLine(userCert.ToString());
-    Console.WriteLine();
-    //
-    // User verify cert.
-    //
-    bool validated;
-    try
-    {
-        caCrl.Verify(caCert.GetPublicKey());
-        userCert.Verify(caCert.GetPublicKey());
-        validated = true;
-    }
-    catch
-    {
-        validated = false;
-    }
-    Console.WriteLine("Verify user cert - " + validated);
-}
-
 ```
 
 ### ECDH
 
 ```c#
 
-private static void Demo1()
+private static void Demo()
 {
-    IECDHAlice ecdhA = new ECDH().GetAliceInterface();
-    IECDHBob ecdhB = new ECDH().GetBobInterface();
+    IKeyExchangeA keA = new ECDH().GetKeyExchangeAInterface();
+    IKeyExchangeB keB = new ECDH().GetKeyExchangeBInterface();
 
     // Alice work
-    ecdhA.GenerateParameters(384);
-    byte[] p = ecdhA.P;
-    byte[] g = ecdhA.G;
-    byte[] materialAlice = ecdhA.MaterialAlice;
+    keA.GenerateParameters(384);
+    byte[] p = keA.P;
+    byte[] g = keA.G;
+    byte[] publicKeyA = keA.PublicKeyA;
 
     // Bob work
-    ecdhB.GenerateParameters(p, g, materialAlice);
-    byte[] pmsBob = ecdhB.DeriveKeyMaterial(true);
-    byte[] materialBob = ecdhB.MaterialBob;
+    keB.GenerateParameters(p, g, publicKeyA);
+    byte[] pmsB = keB.DeriveKeyMaterial(true);
+    byte[] publicKeyB = keB.PublicKeyB;
 
     // Alice work
-    byte[] pmsAlice = ecdhA.DeriveKeyMaterial(materialBob, true);
+    byte[] pmsA = keA.DeriveKeyMaterial(publicKeyB, true);
 
     //
-    bool same = pmsAlice.SequenceEqual(pmsBob);
+    bool same = pmsA.SequenceEqual(pmsB);
     Console.WriteLine($"ECDH {same}");
-    Console.WriteLine(BitConverter.ToString(pmsAlice).Replace("-", ""));
-    Console.WriteLine(BitConverter.ToString(pmsBob).Replace("-", ""));
+    Console.WriteLine(BitConverter.ToString(pmsA).Replace("-", ""));
+    Console.WriteLine(BitConverter.ToString(pmsB).Replace("-", ""));
 }
 
 ```
@@ -314,8 +246,8 @@ BouncyCastle 1.9.0 has not been fixed
 
 1. RC5-32, RC5-64 does not support KeyParameter, only RC5Parameters. (feature?)
 2. GCM cipher mode cannot be auto resue. The algorithm instance needs to be recreated every time.
-3. BUG: GOFB cipher mode N3, N4 value omitted at reset. The cipher instance needs to be recreated every time.
-4. OCB cipher mode supported null(0) Nonce/IV size but BouncyCastle cannot set that.
+3. GOFB cipher mode N3, N4 value omitted at reset. The cipher instance needs to be recreated every time.
+4. OCB cipher mode supported null(0) iv size but BouncyCastle cannot set that.
 5. The signature algorithm SHA256withECDSA points to SHA224withECDSA at Org.BouncyCastle.Cms.DefaultSignatureAlgorithmIdentifierFinder.
 6. SM2Signer does not reset the hash algorithm automatically. must be Reset() manually.
 

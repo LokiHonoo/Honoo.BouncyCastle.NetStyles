@@ -1,4 +1,4 @@
-﻿using Honoo.BouncyCastle;
+﻿using Honoo.BouncyCastle.NetStyles;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Parameters;
 using System;
@@ -9,6 +9,7 @@ namespace Test
     internal static class Symmetric
     {
         private static readonly byte[] _input = new byte[123];
+        private static readonly byte[] _keyExchangePms = new byte[300];
         private static int _diff = 0;
         private static int _ignore = 0;
         private static int _total = 0;
@@ -16,6 +17,7 @@ namespace Test
         static Symmetric()
         {
             Common.Random.NextBytes(_input);
+            Common.Random.NextBytes(_keyExchangePms);
         }
 
         internal static void Test()
@@ -40,10 +42,10 @@ namespace Test
             alg1.Mode = SymmetricCipherMode.CTR;
             alg1.Padding = SymmetricPaddingMode.TBC;
             Rijndael alg2 = new Rijndael(224) { Mode = SymmetricCipherMode.CTR, Padding = SymmetricPaddingMode.TBC };
-            byte[] key = new byte[16];
-            byte[] iv = new byte[28];
-            Common.Random.NextBytes(key);
-            Common.Random.NextBytes(iv);
+            byte[] key = new byte[160 / 8];  // 160 = Rijndael legal key size bits.
+            byte[] iv = new byte[224 / 8];   // 224 = CTR mode limit same as Rijndael block size bits.
+            Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+            Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
             alg1.ImportParameters(key, iv);
             alg2.ImportParameters(key, iv);
             byte[] enc = alg1.EncryptFinal(_input);
@@ -56,10 +58,10 @@ namespace Test
             alg1.Mode = SymmetricCipherMode.EAX;
             alg1.Padding = SymmetricPaddingMode.NoPadding;
             AES alg2 = new AES { Mode = SymmetricCipherMode.EAX, Padding = SymmetricPaddingMode.NoPadding };
-            byte[] key = new byte[16];
-            byte[] nonce = new byte[22];
-            Common.Random.NextBytes(key);
-            Common.Random.NextBytes(nonce);
+            byte[] key = new byte[128 / 8];  // 128 = AES legal key size bits.
+            byte[] nonce = new byte[256 / 8];   // 256 = EAX mode limits.
+            Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+            Buffer.BlockCopy(_keyExchangePms, 0, nonce, 0, nonce.Length);
             alg1.ImportParameters(key, nonce, 64, new byte[] { 0x01, 0x02, 0x03 });
             alg2.ImportParameters(key, nonce, 64, new byte[] { 0x01, 0x02, 0x03 });
             byte[] enc = alg1.EncryptFinal(_input);
@@ -70,10 +72,10 @@ namespace Test
         {
             SymmetricAlgorithm alg1 = SymmetricAlgorithm.Create(SymmetricAlgorithmName.HC128);
             HC128 alg2 = new HC128();
-            byte[] key = new byte[16];
-            byte[] iv = new byte[16];
-            Common.Random.NextBytes(key);
-            Common.Random.NextBytes(iv);
+            byte[] key = new byte[128 / 8];  // 128 = HC128 legal key size bits.
+            byte[] iv = new byte[128 / 8];   // 256 = HC128 legal iv size bits.
+            Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+            Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
             alg1.ImportParameters(key, iv);
             alg2.ImportParameters(key, iv);
             byte[] enc = alg1.EncryptFinal(_input);

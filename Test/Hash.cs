@@ -1,4 +1,4 @@
-﻿using Honoo.BouncyCastle;
+﻿using Honoo.BouncyCastle.NetStyles;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +8,7 @@ namespace Test
     internal static class Hash
     {
         private static readonly byte[] _input = new byte[15];
+        private static readonly byte[] _keyExchangePms = new byte[300];
         private static int _diff = 0;
         private static int _ignore = 0;
         private static int _total = 0;
@@ -15,6 +16,7 @@ namespace Test
         static Hash()
         {
             Common.Random.NextBytes(_input);
+            Common.Random.NextBytes(_keyExchangePms);
         }
 
         internal static void Test()
@@ -36,45 +38,51 @@ namespace Test
         private static void Demo1()
         {
             SHA1 sha1 = new SHA1();
-            _ = sha1.ComputeHash(_input);
+            _ = sha1.ComputeFinal(_input);
+
+            HashAlgorithm sha256 = HashAlgorithm.Create(HashAlgorithmName.SHA256);
+            sha256.Update(_input);
+            _ = sha256.ComputeFinal();
         }
 
         private static void Demo2()
         {
-            HMAC hmac1 = HMAC.Create(HashAlgorithmName.BLAKE2b256);
-            hmac1.GenerateParameters(224); // Any length.
-            hmac1.ExportParameters(out byte[] key);
-            _ = hmac1.ComputeHash(_input);
-            HMAC hmac2 = HMAC.Create(HashAlgorithmName.BLAKE2b256);
+            HMAC hmac1 = HMAC.Create(HMACName.HMAC_SM3);
+            byte[] key = new byte[66]; // Any length.
+            Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+            hmac1.ImportParameters(key);
+            _ = hmac1.ComputeFinal(_input);
+            HMAC hmac2 = HMAC.Create(HMACName.HMAC_SM3);
             hmac2.ImportParameters(key);
-            _ = hmac2.ComputeHash(_input);
+            _ = hmac2.ComputeFinal(_input);
         }
 
         private static void Demo3()
         {
-            CMAC cmac1 = CMAC.Create(SymmetricAlgorithmName.AES);
-            // 192 = AES legal key size bits.
-            cmac1.GenerateParameters(192);
-            cmac1.ExportParameters(out byte[] key);
-            _ = cmac1.ComputeHash(_input);
-            CMAC cmac2 = CMAC.Create(SymmetricAlgorithmName.AES);
+            CMAC cmac1 = CMAC.Create(CMACName.AES_CMAC);
+            byte[] key = new byte[192 / 8]; // 192 = AES legal key size bits.
+            Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+            cmac1.ImportParameters(key);
+            _ = cmac1.ComputeFinal(_input);
+            CMAC cmac2 = CMAC.Create(CMACName.AES_CMAC);
             cmac2.ImportParameters(key);
-            _ = cmac2.ComputeHash(_input);
+            _ = cmac2.ComputeFinal(_input);
         }
 
         private static void Demo4()
         {
-            MAC mac1 = MAC.Create(SymmetricAlgorithmName.Rijndael224);
+            MAC mac1 = MAC.Create(MACName.Rijndael224_MAC);
             mac1.Mode = SymmetricCipherMode.CBC;
             mac1.Padding = SymmetricPaddingMode.TBC;
-            // 160 = Rijndael legal key size bits.
-            // 224 = CBC mode limit same as Rijndael block size bits.
-            mac1.GenerateParameters(160, 224);
-            mac1.ExportParameters(out byte[] key, out byte[] iv);
-            _ = mac1.ComputeHash(_input);
-            MAC mac2 = MAC.Create(SymmetricAlgorithmName.Rijndael224);
+            byte[] key = new byte[160 / 8];  // 160 = Rijndael legal key size bits.
+            byte[] iv = new byte[224 / 8];   // 224 = CBC mode limit same as Rijndael block size bits.
+            Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
+            Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
+            mac1.ImportParameters(key, iv);
+            _ = mac1.ComputeFinal(_input);
+            MAC mac2 = MAC.Create(MACName.Rijndael224_MAC);
             mac2.ImportParameters(key, iv);
-            _ = mac2.ComputeHash(_input);
+            _ = mac2.ComputeFinal(_input);
         }
 
         private static void DoAll()
@@ -88,30 +96,26 @@ namespace Test
             }
             foreach (var algorithmName in algorithmNames)
             {
-                if (algorithmName.Name.StartsWith("Skein"))
-                {
-                }
                 _total++;
                 HashAlgorithmName.TryGetAlgorithmName(algorithmName.Name, out HashAlgorithmName algorithmName2);
                 HashAlgorithm alg = HashAlgorithm.Create(algorithmName2);
-                string title = $"{alg.Name}/{alg.HashSize}";
-                alg.ComputeHash(_input);
+                alg.ComputeFinal(_input);
                 var net = System.Security.Cryptography.HashAlgorithm.Create(algorithmName2.Name);
-                byte[] hash = net == null ? alg.ComputeHash(_input) : net.ComputeHash(_input);
-                WriteResult(title, hash, alg.ComputeHash(_input));
+                byte[] hash = net == null ? alg.ComputeFinal(_input) : net.ComputeHash(_input);
+                WriteResult(alg.Name, alg.HashSize, hash, alg.ComputeFinal(_input));
             }
-            foreach (var algorithmName in algorithmNames)
+            foreach (var algorithmName in HMACName.GetNames())
             {
                 _total++;
-                HMAC alg = HMAC.Create(algorithmName);
-                string title = $"{alg.Name}/{alg.HashSize}";
+                HMACName.TryGetAlgorithmName(algorithmName.Name, out HMACName algorithmName2);
+                HMAC alg = HMAC.Create(algorithmName2);
                 alg.GenerateParameters(112);
-                alg.ComputeHash(_input);
+                alg.ComputeFinal(_input);
                 var net = System.Security.Cryptography.HMAC.Create($"HMAC{algorithmName}");
                 byte[] hash;
                 if (net == null)
                 {
-                    hash = alg.ComputeHash(_input); ;
+                    hash = alg.ComputeFinal(_input); ;
                 }
                 else
                 {
@@ -119,37 +123,31 @@ namespace Test
                     net.Key = key;
                     hash = net.ComputeHash(_input);
                 }
-                WriteResult(title, hash, alg.ComputeHash(_input));
+                WriteResult(alg.Name, alg.HashSize, hash, alg.ComputeFinal(_input));
             }
-            foreach (var algorithmName in SymmetricAlgorithmName.GetNames())
+            foreach (var algorithmName in CMACName.GetNames())
             {
-                if (algorithmName.Kind == SymmetricAlgorithmKind.Block && (algorithmName.BlockSize == 64 || algorithmName.BlockSize == 128))
-                {
-                    _total++;
-                    CMAC alg = CMAC.Create(algorithmName, algorithmName.BlockSize / 2);
-                    string title = $"{alg.Name}/{alg.HashSize}";
-                    alg.GenerateParameters();
-                    alg.ComputeHash(_input);
-                    WriteResult(title, alg.ComputeHash(_input), alg.ComputeHash(_input));
-                }
+                _total++;
+                CMACName.TryGetAlgorithmName(algorithmName.Name, out CMACName algorithmName2);
+                CMAC alg = CMAC.Create(algorithmName2, algorithmName.BlockSize / 2);
+                alg.GenerateParameters();
+                alg.ComputeFinal(_input);
+                WriteResult(alg.Name, alg.HashSize, alg.ComputeFinal(_input), alg.ComputeFinal(_input));
             }
-            foreach (var algorithmName in SymmetricAlgorithmName.GetNames())
+            foreach (var algorithmName in MACName.GetNames())
             {
-                if (algorithmName.Kind == SymmetricAlgorithmKind.Block)
-                {
-                    _total++;
-                    MAC alg = MAC.Create(algorithmName, algorithmName.BlockSize / 2);
-                    string title = $"{alg.Name}/{alg.HashSize}";
-                    alg.GenerateParameters();
-                    alg.ComputeHash(_input);
-                    WriteResult(title, alg.ComputeHash(_input), alg.ComputeHash(_input));
-                }
+                _total++;
+                MACName.TryGetAlgorithmName(algorithmName.Name, out MACName algorithmName2);
+                MAC alg = MAC.Create(algorithmName2, algorithmName.BlockSize / 2);
+                alg.GenerateParameters();
+                alg.ComputeFinal(_input);
+                WriteResult(alg.Name, alg.HashSize, alg.ComputeFinal(_input), alg.ComputeFinal(_input));
             }
         }
 
-        private static void WriteResult(string title, byte[] hash1, byte[] hash2)
+        private static void WriteResult(string title, int hashSize, byte[] hash1, byte[] hash2)
         {
-            string message = (title + " ").PadRight(32, '-');
+            string message = $"{title,-20} HASHSIZE {hashSize}/{hash1.Length * 8} ".PadRight(50, '-');
             if (hash2.SequenceEqual(hash1))
             {
                 Console.WriteLine($"{message} same");

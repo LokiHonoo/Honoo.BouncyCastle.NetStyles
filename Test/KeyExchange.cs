@@ -1,4 +1,4 @@
-﻿using Honoo.BouncyCastle;
+﻿using Honoo.BouncyCastle.NetStyles;
 using System;
 using System.Linq;
 

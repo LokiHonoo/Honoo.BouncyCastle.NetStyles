@@ -1,4 +1,4 @@
-﻿using Honoo.BouncyCastle;
+﻿using Honoo.BouncyCastle.NetStyles;
 using System;
 using System.Diagnostics;
 
@@ -27,7 +27,7 @@ namespace Test
                 stopwatch.Restart();
                 for (int i = 0; i < 10000; i++)
                 {
-                    algorithm.ComputeHash(input);
+                    algorithm.ComputeFinal(input);
                 }
                 stopwatch.Stop();
                 Console.WriteLine("BouncyCastle SHA256 Compute source 13KiB 10000 times : " + stopwatch.ElapsedMilliseconds + " milliseconds");

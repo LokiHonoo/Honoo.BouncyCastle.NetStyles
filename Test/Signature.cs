@@ -1,4 +1,4 @@
-﻿using Honoo.BouncyCastle;
+﻿using Honoo.BouncyCastle.NetStyles;
 using System;
 using System.Collections.Generic;
 
@@ -37,13 +37,17 @@ namespace Test
         private static void Demo()
         {
             ECDSA alg1 = (ECDSA)AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA);
-            IAsymmetricSignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA).GetSignatureInterface();
+            string pem = alg1.ExportPem(false);
+            if (SignatureAlgorithmName.TryGetAlgorithmName("sha256withecdsa", out SignatureAlgorithmName name))
+            {
+                IAsymmetricSignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
+                alg2.ImportPem(pem);
 
-            var pem = alg1.ExportPem(false);
-            alg2.ImportPem(pem);
-
-            byte[] signature = alg1.SignFinal(_input);
-            _ = alg2.VerifyFinal(_input, signature);
+                byte[] signature = alg1.SignFinal(_input);
+                alg2.VerifyUpdate(_input);
+                bool same = alg2.VerifyFinal(signature);
+                WriteResult(alg1.SignatureAlgorithm, same);
+            }
         }
 
         private static void DoAll()
@@ -98,13 +102,13 @@ namespace Test
                 _total++;
                 byte[] signature = alg1.SignFinal(_input);
                 SHA1 sha1 = new SHA1();
-                bool same = net.VerifySignature(sha1.ComputeHash(_input), signature);
+                bool same = net.VerifySignature(sha1.ComputeFinal(_input), signature);
                 WriteResult($"{alg1.SignatureAlgorithm} BC <--> NET", same);
             }
             {
                 _total++;
                 SHA1 sha1 = new SHA1();
-                byte[] signature = net.CreateSignature(sha1.ComputeHash(_input));
+                byte[] signature = net.CreateSignature(sha1.ComputeFinal(_input));
                 bool same = alg2.VerifyFinal(_input, signature);
                 WriteResult($"{alg2.SignatureAlgorithm} BC <--> NET", same);
             }
@@ -174,14 +178,16 @@ namespace Test
             net.ImportParameters(parameters);
             {
                 _total++;
-                byte[] signature = alg1.SignFinal(_input);
+                alg1.SignUpdate(_input);
+                byte[] signature = alg1.SignFinal();
                 bool same = net.VerifyData(_input, "SHA512", signature);
                 WriteResult($"{alg1.SignatureAlgorithm} BC <--> NET", same);
             }
             {
                 _total++;
                 byte[] signature = net.SignData(_input, "SHA512");
-                bool same = alg1.VerifyFinal(_input, signature);
+                alg2.VerifyUpdate(_input);
+                bool same = alg2.VerifyFinal(signature);
                 WriteResult($"{alg1.SignatureAlgorithm} BC <--> NET", same);
             }
             var paddings = (RSASignaturePaddingMode[])Enum.GetValues(typeof(RSASignaturePaddingMode));
