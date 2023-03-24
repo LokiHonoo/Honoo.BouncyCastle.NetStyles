@@ -4,7 +4,6 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.X509;
-using System;
 using System.IO;
 
 namespace Honoo.BouncyCastle.NetStyles
@@ -12,15 +11,19 @@ namespace Honoo.BouncyCastle.NetStyles
     /// <summary>
     /// Represents the abstract base class from which all implementations of asymmetric algorithms must inherit.
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0079:请删除不必要的忽略", Justification = "<挂起>")]
     public abstract class AsymmetricAlgorithm : IAsymmetricAlgorithm
     {
         #region Properties
+
+#pragma warning disable CS1591 // 缺少对公共可见类型或成员的 XML 注释
 
         protected bool _initialized = false;
         protected AsymmetricKeyParameter _privateKey = null;
         protected AsymmetricKeyParameter _publicKey = null;
         private readonly AsymmetricAlgorithmKind _kind;
         private readonly string _name;
+#pragma warning restore CS1591 // 缺少对公共可见类型或成员的 XML 注释
 
         /// <inheritdoc/>
         public AsymmetricAlgorithmKind Kind => _kind;
@@ -44,38 +47,6 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         #endregion Construction
-
-        #region Interfaces
-
-        /// <summary>
-        /// Gets encryption algorithm interface.
-        /// Throw <see cref="NotImplementedException"/> if this algorithm is not a encryption algorithm.
-        /// </summary>
-        /// <returns></returns>
-        public abstract IAsymmetricEncryptionAlgorithm GetEncryptionInterface();
-
-        /// <summary>
-        /// Gets key exchange algorithm party A's interface.
-        /// Throw <see cref="NotImplementedException"/> if this algorithm is not a key exchange algorithm.
-        /// </summary>
-        /// <returns></returns>
-        public abstract IKeyExchangeA GetKeyExchangeAInterface();
-
-        /// <summary>
-        /// Gets key exchange algorithm party B's interface.
-        /// Throw <see cref="NotImplementedException"/> if this algorithm is not a key exchange algorithm.
-        /// </summary>
-        /// <returns></returns>
-        public abstract IKeyExchangeB GetKeyExchangeBInterface();
-
-        /// <summary>
-        /// Gets signature algorithm interface.
-        /// Throw <see cref="NotImplementedException"/> if this algorithm is not a signature algorithm.
-        /// </summary>
-        /// <returns></returns>
-        public abstract IAsymmetricSignatureAlgorithm GetSignatureInterface();
-
-        #endregion Interfaces
 
         #region Export/Import Parameters
 
@@ -104,6 +75,13 @@ namespace Honoo.BouncyCastle.NetStyles
             EncryptedPrivateKeyInfo enc = EncryptedPrivateKeyInfoFactory.CreateEncryptedPrivateKeyInfo(
                 pbeAlgorithmName.Oid, password.ToCharArray(), salt, 2048, _privateKey);
             return enc.GetEncoded();
+        }
+
+        /// <inheritdoc/>
+        public AsymmetricCipherKeyPair ExportParameters()
+        {
+            InspectParameters();
+            return new AsymmetricCipherKeyPair(_publicKey, _privateKey);
         }
 
         /// <inheritdoc/>
@@ -145,10 +123,10 @@ namespace Honoo.BouncyCastle.NetStyles
         public abstract void ImportKeyInfo(byte[] privateKeyInfo, string password);
 
         /// <inheritdoc/>
-        public abstract void ImportParameters(AsymmetricKeyParameter asymmetricKey);
+        public abstract void ImportParameters(AsymmetricCipherKeyPair keyPair);
 
         /// <inheritdoc/>
-        public abstract void ImportParameters(AsymmetricCipherKeyPair keyPair);
+        public abstract void ImportParameters(AsymmetricKeyParameter asymmetricKey);
 
         /// <inheritdoc/>
         public abstract void ImportPem(string keyPem);
@@ -173,17 +151,15 @@ namespace Honoo.BouncyCastle.NetStyles
         /// </summary>
         /// <param name="algorithmName">Signature algorithm name.</param>
         /// <returns></returns>
-        public static AsymmetricAlgorithm Create(SignatureAlgorithmName algorithmName)
+        public static ISignatureAlgorithm Create(SignatureAlgorithmName algorithmName)
         {
-            return algorithmName.GetAlgorithm();
+            return (ISignatureAlgorithm)algorithmName.GetAlgorithm();
         }
 
         /// <inheritdoc/>
         public abstract void GenerateParameters();
 
-        /// <summary>
-        ///
-        /// </summary>
+        /// <summary></summary>
         protected void InspectParameters()
         {
             if (!_initialized)

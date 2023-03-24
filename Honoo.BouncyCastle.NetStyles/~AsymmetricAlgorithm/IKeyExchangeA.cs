@@ -6,6 +6,16 @@
     public interface IKeyExchangeA
     {
         /// <summary>
+        /// Sand this value to party B.
+        /// </summary>
+        byte[] G { get; }
+
+        /// <summary>
+        /// Gets key size bits.
+        /// </summary>
+        int KeySize { get; }
+
+        /// <summary>
         /// Gets the asymmetric algorithm kind of the algorithm.
         /// </summary>
         AsymmetricAlgorithmKind Kind { get; }
@@ -18,21 +28,12 @@
         /// <summary>
         /// Sand this value to party B.
         /// </summary>
-        byte[] G { get; }
-
-        /// <summary>
-        /// Sand this value to party B.
-        /// </summary>
         byte[] P { get; }
 
         /// <summary>
         /// Sand this value to party B.
         /// </summary>
         byte[] PublicKeyA { get; }
-        /// <summary>
-        /// Renew private key and public key of the algorithm by default.
-        /// </summary>
-        void GenerateParameters();
 
         /// <summary>
         /// Derive key material from the party B's exchange.
@@ -43,7 +44,12 @@
         byte[] DeriveKeyMaterial(byte[] publicKeyB, bool unsigned);
 
         /// <summary>
-        /// Renew key exchange parameters of the algorithm.
+        /// Generate new parameters of algorithm party A.
+        /// </summary>
+        void GenerateParameters();
+
+        /// <summary>
+        /// Generate new parameters of algorithm party A.
         /// </summary>
         /// <param name="keySize">Legal key size Prime192v1, SecP224r1, Prime239v1, Prime256v1, SecP384r1, SecP521r1.</param>
         /// <param name="certainty">Legal certainty is more than 0.</param>

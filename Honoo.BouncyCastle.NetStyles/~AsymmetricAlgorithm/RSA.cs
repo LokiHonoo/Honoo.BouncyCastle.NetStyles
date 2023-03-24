@@ -24,7 +24,7 @@ namespace Honoo.BouncyCastle.NetStyles
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class RSA : AsymmetricAlgorithm, IAsymmetricEncryptionAlgorithm, IAsymmetricSignatureAlgorithm
+    public sealed class RSA : AsymmetricAlgorithm, IAsymmetricEncryptionAlgorithm, ISignatureAlgorithm
     {
         #region Properties
 
@@ -34,7 +34,7 @@ namespace Honoo.BouncyCastle.NetStyles
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(24, Common.SizeMax, 8) };
         private IAsymmetricBlockCipher _decryptor = null;
         private IAsymmetricBlockCipher _encryptor = null;
-        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
+        private HashAlgorithmName _hashAlgorithmName = HashAlgorithmName.SHA256;
         private int _keySize = DEFAULT_KEY_SIZE;
         private AsymmetricEncryptionPaddingMode _padding = AsymmetricEncryptionPaddingMode.PKCS1;
         private RSASignaturePaddingMode _signaturePadding = RSASignaturePaddingMode.PKCS1;
@@ -42,68 +42,16 @@ namespace Honoo.BouncyCastle.NetStyles
         private ISigner _verifier = null;
 
         /// <inheritdoc/>
-        public int DecryptInputLength
+        public HashAlgorithmName HashAlgorithmName
         {
-            get
-            {
-                if (_initialized)
-                {
-                    if (_privateKey == null)
-                    {
-                        return 0;
-                    }
-                    else
-                    {
-                        return _keySize / 8;
-                    }
-                }
-                else
-                {
-                    return _keySize / 8;
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        public int DecryptOutputLength
-        {
-            get
-            {
-                if (_initialized)
-                {
-                    if (_privateKey == null)
-                    {
-                        return 0;
-                    }
-                    else
-                    {
-                        return GetPaddedLength();
-                    }
-                }
-                else
-                {
-                    return GetPaddedLength();
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        public int EncryptInputLength => GetPaddedLength();
-
-        /// <inheritdoc/>
-        public int EncryptOutputLength => _keySize / 8;
-
-        /// <inheritdoc/>
-        public HashAlgorithmName HashAlgorithm
-        {
-            get => _hashAlgorithm;
+            get => _hashAlgorithmName;
             set
             {
-                if (value != _hashAlgorithm)
+                if (value != _hashAlgorithmName)
                 {
                     _signer = null;
                     _verifier = null;
-                    _hashAlgorithm = value ?? throw new CryptographicException("This hash algorithm can't be null.");
+                    _hashAlgorithmName = value ?? throw new CryptographicException("This hash algorithm can't be null.");
                 }
             }
         }
@@ -118,7 +66,9 @@ namespace Honoo.BouncyCastle.NetStyles
         /// </summary>
         public KeySizes[] LegalKeySizes => (KeySizes[])LEGAL_KEY_SIZES.Clone();
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Represents the encryption padding mode used in the symmetric algorithm.
+        /// </summary>
         public AsymmetricEncryptionPaddingMode Padding
         {
             get => _padding;
@@ -134,7 +84,15 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm, _signaturePadding);
+        public SignatureAlgorithmName SignatureAlgorithmName
+        {
+            get
+            {
+                string mechanism = GetSignatureAlgorithmMechanism(_hashAlgorithmName, _signaturePadding);
+                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
+                return algorithmName;
+            }
+        }
 
         /// <summary>
         /// Represents the signature padding mode used in the symmetric algorithm.
@@ -165,34 +123,6 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         #endregion Construction
-
-        #region Interfaces
-
-        /// <inheritdoc/>
-        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
-        {
-            return this;
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeA GetKeyExchangeAInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeB GetKeyExchangeBInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            return this;
-        }
-
-        #endregion Interfaces
 
         #region GenerateParameters
 
@@ -350,7 +280,33 @@ namespace Honoo.BouncyCastle.NetStyles
             _initialized = true;
         }
 
-
+        /// <summary>
+        /// Imports a <see cref="RSAParameters"/> that represents asymmetric algorithm key information.
+        /// </summary>
+        /// <param name="parameters">A <see cref="RSAParameters"/> that represents an asymmetric algorithm key.</param>
+        public void ImportNetParameters(RSAParameters parameters)
+        {
+            RsaPrivateCrtKeyParameters privateKey = null;
+            RsaKeyParameters publicKey;
+            if (parameters.D == null)
+            {
+                publicKey = DotNetUtilities.GetRsaPublicKey(parameters);
+            }
+            else
+            {
+                AsymmetricCipherKeyPair keyPair = DotNetUtilities.GetRsaKeyPair(parameters);
+                privateKey = (RsaPrivateCrtKeyParameters)keyPair.Private;
+                publicKey = (RsaKeyParameters)keyPair.Public;
+            }
+            _privateKey = privateKey;
+            _publicKey = publicKey;
+            _keySize = publicKey.Modulus.BitLength;
+            _encryptor = null;
+            _decryptor = null;
+            _signer = null;
+            _verifier = null;
+            _initialized = true;
+        }
 
         /// <inheritdoc/>
         public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
@@ -390,33 +346,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _verifier = null;
             _initialized = true;
         }
-        /// <summary>
-        /// Imports a <see cref="RSAParameters"/> that represents asymmetric algorithm key information.
-        /// </summary>
-        /// <param name="parameters">A <see cref="RSAParameters"/> that represents an asymmetric algorithm key.</param>
-        public void ImportNetParameters(RSAParameters parameters)
-        {
-            RsaPrivateCrtKeyParameters privateKey = null;
-            RsaKeyParameters publicKey;
-            if (parameters.D == null)
-            {
-                publicKey = DotNetUtilities.GetRsaPublicKey(parameters);
-            }
-            else
-            {
-                AsymmetricCipherKeyPair keyPair = DotNetUtilities.GetRsaKeyPair(parameters);
-                privateKey = (RsaPrivateCrtKeyParameters)keyPair.Private;
-                publicKey = (RsaKeyParameters)keyPair.Public;
-            }
-            _privateKey = privateKey;
-            _publicKey = publicKey;
-            _keySize = publicKey.Modulus.BitLength;
-            _encryptor = null;
-            _decryptor = null;
-            _signer = null;
-            _verifier = null;
-            _initialized = true;
-        }
+
         /// <inheritdoc/>
         public override void ImportPem(string keyPem)
         {
@@ -542,7 +472,15 @@ namespace Honoo.BouncyCastle.NetStyles
             return _decryptor.ProcessBlock(buffer, offset, length);
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Decrypts data with the asymmetric algorithm. Need set <see cref="Padding"/> = <see cref="AsymmetricEncryptionPaddingMode.OAEP"/>.
+        /// </summary>
+        /// <param name="buffer">The encrypted data buffer.</param>
+        /// <param name="offset">The starting offset to read.</param>
+        /// <param name="length">The length to read.</param>
+        /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
+        /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
+        /// <returns></returns>
         public byte[] Decrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
         {
             if (_padding != AsymmetricEncryptionPaddingMode.OAEP)
@@ -571,7 +509,15 @@ namespace Honoo.BouncyCastle.NetStyles
             return _encryptor.ProcessBlock(buffer, offset, length);
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Encrypts data with the asymmetric algorithm. Need set <see cref="Padding"/> = <see cref="AsymmetricEncryptionPaddingMode.OAEP"/>.
+        /// </summary>
+        /// <param name="buffer">The data buffer to be encrypted.</param>
+        /// <param name="offset">The starting offset to read.</param>
+        /// <param name="length">The length to read.</param>
+        /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
+        /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
+        /// <returns></returns>
         public byte[] Encrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
         {
             if (_padding != AsymmetricEncryptionPaddingMode.OAEP)
@@ -581,6 +527,34 @@ namespace Honoo.BouncyCastle.NetStyles
             InspectParameters();
             _encryptor = GetCipher(true, hashForOAEP, mgf1ForOAEP);
             return _encryptor.ProcessBlock(buffer, offset, length);
+        }
+
+        /// <inheritdoc/>
+        public int GetLegalInputLength(bool forEncryption)
+        {
+            if (forEncryption)
+            {
+                int length = _keySize / 8;
+                switch (_padding)
+                {
+                    case AsymmetricEncryptionPaddingMode.NoPadding: return length - 1;
+                    case AsymmetricEncryptionPaddingMode.PKCS1: return length - 11;
+                    case AsymmetricEncryptionPaddingMode.OAEP: return length - 42;
+                    case AsymmetricEncryptionPaddingMode.ISO9796_1: return length / 2;
+                    default: throw new CryptographicException("Unsupported padding mode.");
+                }
+            }
+            else
+            {
+                if (_initialized)
+                {
+                    if (_privateKey == null)
+                    {
+                        return 0;
+                    }
+                }
+                return _keySize / 8;
+            }
         }
 
         #endregion Encryption
@@ -681,6 +655,7 @@ namespace Honoo.BouncyCastle.NetStyles
         /// Determines whether the specified size is valid for the current algorithm.
         /// </summary>
         /// <param name="keySize">Legal key size is more than or equal to 24 bits (8 bits increments).</param>
+        /// <param name="exception">Exception message.</param>
         /// <returns></returns>
         public bool ValidKeySize(int keySize, out string exception)
         {
@@ -708,7 +683,7 @@ namespace Honoo.BouncyCastle.NetStyles
                                               {
                                                   return new RSA()
                                                   {
-                                                      _hashAlgorithm = hashAlgorithm,
+                                                      _hashAlgorithmName = hashAlgorithm,
                                                       _signaturePadding = signaturePadding,
                                                   };
                                               });
@@ -761,30 +736,17 @@ namespace Honoo.BouncyCastle.NetStyles
             return cipher;
         }
 
-        private int GetPaddedLength()
-        {
-            int length = _keySize / 8;
-            switch (_padding)
-            {
-                case AsymmetricEncryptionPaddingMode.NoPadding: return length - 1;
-                case AsymmetricEncryptionPaddingMode.PKCS1: return length - 11;
-                case AsymmetricEncryptionPaddingMode.OAEP: return length - 42;
-                case AsymmetricEncryptionPaddingMode.ISO9796_1: return length / 2;
-                default: throw new CryptographicException("Unsupported padding mode.");
-            }
-        }
-
         private void InspectSigner(bool forSigning)
         {
             if (forSigning)
             {
                 if (_signer == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     switch (_signaturePadding)
                     {
                         case RSASignaturePaddingMode.PKCS1: _signer = new RsaDigestSigner(digest); break;
-                        case RSASignaturePaddingMode.MGF1: _signer = new PssSigner(new RsaBlindedEngine(), digest, _hashAlgorithm.HashSize / 8); break;
+                        case RSASignaturePaddingMode.MGF1: _signer = new PssSigner(new RsaBlindedEngine(), digest, _hashAlgorithmName.HashSize / 8); break;
                         case RSASignaturePaddingMode.X931: _signer = new X931Signer(new RsaBlindedEngine(), digest); break;
                         case RSASignaturePaddingMode.ISO9796_2: _signer = new Iso9796d2Signer(new RsaBlindedEngine(), digest); break;
                         default: throw new CryptographicException("Unsupported signature padding mode.");
@@ -796,11 +758,11 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 if (_verifier == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     switch (_signaturePadding)
                     {
                         case RSASignaturePaddingMode.PKCS1: _verifier = new RsaDigestSigner(digest); break;
-                        case RSASignaturePaddingMode.MGF1: _verifier = new PssSigner(new RsaBlindedEngine(), digest, _hashAlgorithm.HashSize / 8); break;
+                        case RSASignaturePaddingMode.MGF1: _verifier = new PssSigner(new RsaBlindedEngine(), digest, _hashAlgorithmName.HashSize / 8); break;
                         case RSASignaturePaddingMode.X931: _verifier = new X931Signer(new RsaBlindedEngine(), digest); break;
                         case RSASignaturePaddingMode.ISO9796_2: _verifier = new Iso9796d2Signer(new RsaBlindedEngine(), digest); break;
                         default: throw new CryptographicException("Unsupported signature padding mode.");

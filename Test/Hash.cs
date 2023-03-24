@@ -24,6 +24,7 @@ namespace Test
             _total = 0;
             _diff = 0;
             _ignore = 0;
+            DoLength();
             Demo1();
             Demo2();
             Demo3();
@@ -148,6 +149,16 @@ namespace Test
                 alg.ImportParameters(param);
                 alg.ComputeFinal(_input);
                 WriteResult(alg.Name, alg.HashSize, alg.ComputeFinal(_input), alg.ComputeFinal(_input));
+            }
+        }
+
+        private static void DoLength()
+        {
+            foreach (var algorithmName in HashAlgorithmName.GetNames())
+            {
+                HashAlgorithm alg = HashAlgorithm.Create(algorithmName);
+                byte[] hash = alg.ComputeFinal(_input);
+                Console.WriteLine($"{alg.Name + " " + alg.HashSize,-24} {BitConverter.ToString(hash).Replace("-", "")}");
             }
         }
 

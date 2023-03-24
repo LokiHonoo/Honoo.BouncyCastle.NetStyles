@@ -3,6 +3,7 @@ using Org.BouncyCastle.Asn1.GM;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
@@ -10,7 +11,6 @@ using Org.BouncyCastle.Math.EC.Multiplier;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using System;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -19,33 +19,47 @@ namespace Honoo.BouncyCastle.NetStyles
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class SM2 : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
+    public sealed class SM2 : AsymmetricAlgorithm, IAsymmetricEncryptionAlgorithm, ISignatureAlgorithm
     {
         #region Properties
 
         private const SM2EllipticCurve DEFAULT_CURVE = SM2EllipticCurve.Sm2P256v1;
+        private const int DEFAULT_KEY_SIZE = 256;
         private const string NAME = "SM2";
-        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SM3;
+        private SM2Engine _decryptor = null;
+        private bool _encryptionInitialized = false;
+        private SM2Engine _encryptor = null;
+        private HashAlgorithmName _hashAlgorithmName = HashAlgorithmName.SM3;
+        private int _keySize = DEFAULT_KEY_SIZE;
+        private ICipherParameters _publicEncryptionKey = null;
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
         /// <inheritdoc/>
-        public HashAlgorithmName HashAlgorithm
+        public HashAlgorithmName HashAlgorithmName
         {
-            get => _hashAlgorithm;
+            get => _hashAlgorithmName;
             set
             {
-                if (value != _hashAlgorithm)
+                if (value != _hashAlgorithmName)
                 {
                     _signer = null;
                     _verifier = null;
-                    _hashAlgorithm = value ?? throw new CryptographicException("This hash algorithm can't be null.");
+                    _hashAlgorithmName = value ?? throw new CryptographicException("This hash algorithm can't be null.");
                 }
             }
         }
 
         /// <inheritdoc/>
-        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm);
+        public SignatureAlgorithmName SignatureAlgorithmName
+        {
+            get
+            {
+                string mechanism = GetSignatureAlgorithmMechanism(_hashAlgorithmName);
+                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
+                return algorithmName;
+            }
+        }
 
         #endregion Properties
 
@@ -54,39 +68,11 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <summary>
         /// Initializes a new instance of the SM2 class.
         /// </summary>
-        public SM2() : base(NAME, AsymmetricAlgorithmKind.Signature)
+        public SM2() : base(NAME, AsymmetricAlgorithmKind.SignatureAndEncryption)
         {
         }
 
         #endregion Construction
-
-        #region Interfaces
-
-        /// <inheritdoc/>
-        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeA GetKeyExchangeAInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeB GetKeyExchangeBInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            return this;
-        }
-
-        #endregion Interfaces
 
         #region GenerateParameters
 
@@ -110,9 +96,14 @@ namespace Honoo.BouncyCastle.NetStyles
             AsymmetricCipherKeyPair keyPair = generator.GenerateKeyPair();
             _privateKey = keyPair.Private;
             _publicKey = keyPair.Public;
+            _keySize = ellipticCurve == SM2EllipticCurve.WapiP192v1 ? 192 : 256;
             _signer = null;
             _verifier = null;
             _initialized = true;
+            _publicEncryptionKey = null;
+            _encryptor = null;
+            _decryptor = null;
+            _encryptionInitialized = false;
         }
 
         #endregion GenerateParameters
@@ -145,9 +136,14 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             _privateKey = privateKey;
             _publicKey = publicKey;
+            _keySize = publicKey.Parameters.Curve.FieldSize;
             _signer = null;
             _verifier = null;
             _initialized = true;
+            _publicEncryptionKey = null;
+            _encryptor = null;
+            _decryptor = null;
+            _encryptionInitialized = false;
         }
 
         /// <inheritdoc/>
@@ -159,11 +155,17 @@ namespace Honoo.BouncyCastle.NetStyles
             ECPrivateKeyParameters privateKey = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(priInfo);
             var q = new FixedPointCombMultiplier().Multiply(privateKey.Parameters.G, privateKey.D);
             ECPublicKeyParameters publicKey = new ECPublicKeyParameters(privateKey.AlgorithmName, q, privateKey.Parameters);
+
             _privateKey = privateKey;
             _publicKey = publicKey;
+            _keySize = publicKey.Parameters.Curve.FieldSize;
             _signer = null;
             _verifier = null;
             _initialized = true;
+            _publicEncryptionKey = null;
+            _encryptor = null;
+            _decryptor = null;
+            _encryptionInitialized = false;
         }
 
         /// <inheritdoc/>
@@ -183,9 +185,14 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             _privateKey = privateKey;
             _publicKey = publicKey;
+            _keySize = publicKey.Parameters.Curve.FieldSize;
             _signer = null;
             _verifier = null;
             _initialized = true;
+            _publicEncryptionKey = null;
+            _encryptor = null;
+            _decryptor = null;
+            _encryptionInitialized = false;
         }
 
         /// <inheritdoc/>
@@ -195,9 +202,14 @@ namespace Honoo.BouncyCastle.NetStyles
             ECPublicKeyParameters publicKey = (ECPublicKeyParameters)keyPair.Public;
             _privateKey = privateKey;
             _publicKey = publicKey;
+            _keySize = publicKey.Parameters.Curve.FieldSize;
             _signer = null;
             _verifier = null;
             _initialized = true;
+            _publicEncryptionKey = null;
+            _encryptor = null;
+            _decryptor = null;
+            _encryptionInitialized = false;
         }
 
         /// <inheritdoc/>
@@ -220,9 +232,14 @@ namespace Honoo.BouncyCastle.NetStyles
                 }
                 _privateKey = privateKey;
                 _publicKey = publicKey;
+                _keySize = publicKey.Parameters.Curve.FieldSize;
                 _signer = null;
                 _verifier = null;
                 _initialized = true;
+                _publicEncryptionKey = null;
+                _encryptor = null;
+                _decryptor = null;
+                _encryptionInitialized = false;
             }
         }
 
@@ -237,13 +254,83 @@ namespace Honoo.BouncyCastle.NetStyles
                 ECPublicKeyParameters publicKey = (ECPublicKeyParameters)keyPair.Public;
                 _privateKey = privateKey;
                 _publicKey = publicKey;
+                _keySize = publicKey.Parameters.Curve.FieldSize;
                 _signer = null;
                 _verifier = null;
                 _initialized = true;
+                _publicEncryptionKey = null;
+                _encryptor = null;
+                _decryptor = null;
+                _encryptionInitialized = false;
             }
         }
 
         #endregion Export/Import Parameters
+
+        #region Encryption
+
+        /// <inheritdoc/>
+        public byte[] Decrypt(byte[] rgb)
+        {
+            return Decrypt(rgb, 0, rgb.Length);
+        }
+
+        /// <inheritdoc/>
+        public byte[] Decrypt(byte[] buffer, int offset, int length)
+        {
+            InspectParameters();
+            InspectEncryptionParameters();
+            if (_decryptor == null)
+            {
+                _decryptor = GetCipher(false);
+            }
+            return _decryptor.ProcessBlock(buffer, offset, length);
+        }
+
+        /// <inheritdoc/>
+        public byte[] Encrypt(byte[] rgb)
+        {
+            return Encrypt(rgb, 0, rgb.Length);
+        }
+
+        /// <inheritdoc/>
+        public byte[] Encrypt(byte[] buffer, int offset, int length)
+        {
+            InspectParameters();
+            InspectEncryptionParameters();
+            if (_encryptor == null)
+            {
+                _encryptor = GetCipher(true);
+            }
+            return _encryptor.ProcessBlock(buffer, offset, length);
+        }
+
+        /// <inheritdoc/>
+        public int GetLegalInputLength(bool forEncryption)
+        {
+            if (forEncryption)
+            {
+                switch (_keySize)
+                {
+                    case 192: return int.MaxValue - 81;
+                    case 256: return int.MaxValue - 97;
+                    default: throw new CryptographicException("Unknow elliptic curve.");
+                }
+            }
+            else
+            {
+                if (_initialized)
+                {
+                    if (_privateKey == null)
+                    {
+                        return 0;
+                    }
+                }
+                return int.MaxValue;
+            }
+        }
+
+        #endregion Encryption
 
         #region Signature
 
@@ -345,7 +432,7 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm)
         {
             return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm),
-                                              () => { return new SM2() { _hashAlgorithm = hashAlgorithm }; });
+                                              () => { return new SM2() { _hashAlgorithmName = hashAlgorithm }; });
         }
 
         private static DerObjectIdentifier GetNamedOid(SM2EllipticCurve ellipticCurve)
@@ -364,13 +451,36 @@ namespace Honoo.BouncyCastle.NetStyles
             return $"{hashAlgorithm.Name}with{NAME}";
         }
 
+        private void GenerateEncryptionParameters()
+        {
+            _publicEncryptionKey = new ParametersWithRandom(_publicKey, Common.SecureRandom.Value);
+            _decryptor = null;
+            _encryptor = null;
+            _encryptionInitialized = true;
+        }
+
+        private SM2Engine GetCipher(bool forEncryption)
+        {
+            SM2Engine cipher = new SM2Engine();
+            cipher.Init(forEncryption, forEncryption ? _publicEncryptionKey : _privateKey);
+            return cipher;
+        }
+
+        private void InspectEncryptionParameters()
+        {
+            if (!_encryptionInitialized)
+            {
+                GenerateEncryptionParameters();
+            }
+        }
+
         private void InspectSigner(bool forSigning)
         {
             if (forSigning)
             {
                 if (_signer == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     _signer = new SM2Signer(digest);
                     _signer.Init(true, _privateKey);
                 }
@@ -379,7 +489,7 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 if (_verifier == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     _verifier = new SM2Signer(digest);
                     _verifier.Init(false, _publicKey);
                 }

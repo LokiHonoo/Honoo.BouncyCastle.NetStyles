@@ -17,8 +17,8 @@
 
         /// <summary>
         /// X931 padding mode.
-        /// <para/>Legal signature hash Algorithm: <see cref="HashAlgorithmName.SHA1"/>, 
-        /// <see cref="HashAlgorithmName.SHA224"/>, <see cref="HashAlgorithmName.SHA256"/>, 
+        /// <para/>Legal signature hash Algorithm: <see cref="HashAlgorithmName.SHA1"/>,
+        /// <see cref="HashAlgorithmName.SHA224"/>, <see cref="HashAlgorithmName.SHA256"/>,
         /// <see cref="HashAlgorithmName.SHA384"/>, <see cref="HashAlgorithmName.SHA512"/>,
         /// <see cref="HashAlgorithmName.RIPEMD128"/>, <see cref="HashAlgorithmName.RIPEMD160"/>,
         /// <see cref="HashAlgorithmName.SHA512_224"/>, <see cref="HashAlgorithmName.SHA512_256"/>,

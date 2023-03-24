@@ -16,43 +16,51 @@ using Org.BouncyCastle.Math.EC.Multiplier;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Honoo.BouncyCastle.NetStyles
 {
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class ECDSA : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
+    public sealed class ECDSA : AsymmetricAlgorithm, ISignatureAlgorithm
     {
         #region Properties
 
         private const EllipticCurve DEFAULT_CURVE = EllipticCurve.Prime256v1;
         private const string NAME = "ECDSA";
-        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
+        private HashAlgorithmName _hashAlgorithmName = HashAlgorithmName.SHA256;
         private ECDSASignatureExtension _signatureExtension = ECDSASignatureExtension.ECDSA;
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
         /// <inheritdoc/>
-        public HashAlgorithmName HashAlgorithm
+        public HashAlgorithmName HashAlgorithmName
         {
-            get => _hashAlgorithm;
+            get => _hashAlgorithmName;
             set
             {
-                if (value != _hashAlgorithm)
+                if (value != _hashAlgorithmName)
                 {
                     _signer = null;
                     _verifier = null;
-                    _hashAlgorithm = value ?? throw new CryptographicException("This hash algorithm can't be null.");
+                    _hashAlgorithmName = value ?? throw new CryptographicException("This hash algorithm can't be null.");
                 }
             }
         }
 
         /// <inheritdoc/>
-        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm, _signatureExtension);
+        public SignatureAlgorithmName SignatureAlgorithmName
+        {
+            get
+            {
+                string mechanism = GetSignatureAlgorithmMechanism(_hashAlgorithmName, _signatureExtension);
+                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
+                return algorithmName;
+            }
+        }
 
         /// <summary>
         /// Represents the signature extension used in the symmetric algorithm.
@@ -84,34 +92,6 @@ namespace Honoo.BouncyCastle.NetStyles
 
         #endregion Construction
 
-        #region Interfaces
-
-        /// <inheritdoc/>
-        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeA GetKeyExchangeAInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeB GetKeyExchangeBInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            return this;
-        }
-
-        #endregion Interfaces
-
         #region GenerateParameters
 
         /// <inheritdoc/>
@@ -128,8 +108,9 @@ namespace Honoo.BouncyCastle.NetStyles
         {
             //X9ECParameters x9Parameters = GetX9ECParameters(ellipticCurve);
             //ECDomainParameters domainParameters = new ECDomainParameters(x9Parameters);
+            //ECKeyGenerationParameters generationParameters = new ECKeyGenerationParameters(domainParameters, Common.SecureRandom.Value);
             ECKeyGenerationParameters generationParameters = new ECKeyGenerationParameters(GetNamedOid(ellipticCurve), Common.SecureRandom.Value);
-            ECKeyPairGenerator generator = new ECKeyPairGenerator("ECDSA");
+            ECKeyPairGenerator generator = new ECKeyPairGenerator();
             generator.Init(generationParameters);
             AsymmetricCipherKeyPair keyPair = generator.GenerateKeyPair();
             _privateKey = keyPair.Private;
@@ -365,7 +346,7 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm, ECDSASignatureExtension signatureExtension)
         {
             return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm, signatureExtension),
-                                              () => { return new ECDSA() { _hashAlgorithm = hashAlgorithm, _signatureExtension = signatureExtension }; });
+                                              () => { return new ECDSA() { _hashAlgorithmName = hashAlgorithm, _signatureExtension = signatureExtension }; });
         }
 
         private static DerObjectIdentifier GetNamedOid(EllipticCurve ellipticCurve)
@@ -465,18 +446,18 @@ namespace Honoo.BouncyCastle.NetStyles
 
                 case EllipticCurve.FRP256v1: return AnssiObjectIdentifiers.FRP256v1;
 
-                case EllipticCurve.GostR3410_2001_CryptoPro_A: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProA;
-                case EllipticCurve.GostR3410_2001_CryptoPro_B: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProB;
-                case EllipticCurve.GostR3410_2001_CryptoPro_C: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProC;
-                case EllipticCurve.GostR3410_2001_CryptoPro_XchA: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProXchA;
-                case EllipticCurve.GostR3410_2001_CryptoPro_XchB: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProXchB;
-                case EllipticCurve.Tc26_Gost3410_12_256_ParamSetA: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_256_paramSetA;
-                case EllipticCurve.Tc26_Gost3410_12_512_ParamSetA: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetA;
-                case EllipticCurve.Tc26_Gost3410_12_512_ParamSetB: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetB;
-                case EllipticCurve.Tc26_Gost3410_12_512_ParamSetC: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetC;
+                //case EllipticCurve.GostR3410_2001_CryptoPro_A: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProA;
+                //case EllipticCurve.GostR3410_2001_CryptoPro_B: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProB;
+                //case EllipticCurve.GostR3410_2001_CryptoPro_C: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProC;
+                //case EllipticCurve.GostR3410_2001_CryptoPro_XchA: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProXchA;
+                //case EllipticCurve.GostR3410_2001_CryptoPro_XchB: return CryptoProObjectIdentifiers.GostR3410x2001CryptoProXchB;
+                //case EllipticCurve.Tc26_Gost3410_12_256_ParamSetA: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_256_paramSetA;
+                //case EllipticCurve.Tc26_Gost3410_12_512_ParamSetA: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetA;
+                //case EllipticCurve.Tc26_Gost3410_12_512_ParamSetB: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetB;
+                //case EllipticCurve.Tc26_Gost3410_12_512_ParamSetC: return RosstandartObjectIdentifiers.id_tc26_gost_3410_12_512_paramSetC;
 
-                case EllipticCurve.WapiP192v1: return GMObjectIdentifiers.wapip192v1;
-                case EllipticCurve.Sm2P256v1: return GMObjectIdentifiers.sm2p256v1;
+                //case EllipticCurve.WapiP192v1: return GMObjectIdentifiers.wapip192v1;
+                //case EllipticCurve.Sm2P256v1: return GMObjectIdentifiers.sm2p256v1;
 
                 default: throw new CryptographicException("Unsupported elliptic curve.");
             }
@@ -616,7 +597,7 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 if (_signer == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     switch (_signatureExtension)
                     {
                         case ECDSASignatureExtension.ECDSA: _signer = new DsaDigestSigner(new ECDsaSigner(), digest); break;
@@ -632,7 +613,7 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 if (_verifier == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     switch (_signatureExtension)
                     {
                         case ECDSASignatureExtension.ECDSA: _verifier = new DsaDigestSigner(new ECDsaSigner(), digest); break;

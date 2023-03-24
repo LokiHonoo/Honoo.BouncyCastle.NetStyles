@@ -1,5 +1,4 @@
-﻿using Honoo.BouncyCastle.NetStyles.X509.Utilities;
-using Org.BouncyCastle.Asn1;
+﻿using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
@@ -7,7 +6,6 @@ using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -21,19 +19,19 @@ namespace Honoo.BouncyCastle.NetStyles.X509
         #region Properties
 
         private readonly Pkcs10CertificationRequest _csr;
-        private readonly IDictionary<X509ExtensionLabel, X509Extension> _extensions = new SortedDictionary<X509ExtensionLabel, X509Extension>();
+        private readonly X509ExtensionCollection _extensions = new X509ExtensionCollection();
         private readonly AsymmetricKeyParameter _publicKey;
-        private readonly IDictionary<X509NameLabel, string> _subjectDN = new SortedDictionary<X509NameLabel, string>();
+        private readonly X509NameCollection _subjectDN = new X509NameCollection();
 
         /// <summary>
         /// Gets X509 extension collection.
         /// </summary>
-        public IDictionary<X509ExtensionLabel, X509Extension> Extensions => _extensions;
+        public X509ExtensionCollection Extensions => _extensions;
 
         /// <summary>
         /// Gets X509 subject distinct name collection.
         /// </summary>
-        public IDictionary<X509NameLabel, string> SubjectDN => _subjectDN;
+        public X509NameCollection SubjectDN => _subjectDN;
 
         internal AsymmetricKeyParameter PublicKey => _publicKey;
 
@@ -50,14 +48,15 @@ namespace Honoo.BouncyCastle.NetStyles.X509
             IList values = csrInfo.Subject.GetValueList();
             for (int i = 0; i < oids.Count; i++)
             {
-                _subjectDN.Add(X509Utilities.GetX509NameLabel((DerObjectIdentifier)oids[i]), (string)values[i]);
+                _subjectDN.Add(new X509NameEntity((DerObjectIdentifier)oids[i], (string)values[i]));
             }
             X509Extensions extensions = certificationRequest.GetRequestedExtensions();
             if (extensions != null)
             {
                 foreach (DerObjectIdentifier oid in extensions.GetExtensionOids())
                 {
-                    _extensions.Add(X509Utilities.GetX509ExtensionLabel(oid), extensions.GetExtension(oid));
+                    X509Extension extension = extensions.GetExtension(oid);
+                    _extensions.Add(new X509ExtensionEntity(oid, extension.IsCritical, extension.GetParsedValue()));
                 }
             }
         }
@@ -67,7 +66,7 @@ namespace Honoo.BouncyCastle.NetStyles.X509
         /// <summary>
         /// Verify this certification request by public key .
         /// </summary>
-        /// <param name="publicKeyInfo">Public key.</param>
+        /// <param name="publicKey">Public key.</param>
         public bool Verify(AsymmetricKeyParameter publicKey)
         {
             if (publicKey.IsPrivate)

@@ -16,7 +16,7 @@
 		<PackageTags>Honoo BouncyCastle</PackageTags>
 		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 		<RootNamespace>Honoo.BouncyCastle.NetStyles</RootNamespace>
-		<Version>2.0.0</Version>
+		<Version>2.0.0-alpha6</Version>
 		<AssemblyVersion></AssemblyVersion>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<PackageReadmeFile>README.md</PackageReadmeFile>

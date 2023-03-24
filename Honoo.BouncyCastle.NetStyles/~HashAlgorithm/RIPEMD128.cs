@@ -13,6 +13,7 @@ namespace Honoo.BouncyCastle.NetStyles
         private const int HASH_SIZE = 128;
         private const string NAME = "RIPEMD128";
         private IDigest _digest;
+
         #endregion Properties
 
         #region Construction
@@ -34,6 +35,7 @@ namespace Honoo.BouncyCastle.NetStyles
         {
             return new RIPEMD128();
         }
+
         /// <inheritdoc/>
         public override byte[] ComputeFinal()
         {
@@ -45,6 +47,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _digest.DoFinal(hash, 0);
             return hash;
         }
+
         /// <inheritdoc/>
         public override void Reset()
         {
@@ -60,6 +63,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             _digest.BlockUpdate(buffer, offset, length);
         }
+
         internal static HashAlgorithmName GetAlgorithmName()
         {
             return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new RipeMD128Digest(); }, () => { return new RIPEMD128(); });

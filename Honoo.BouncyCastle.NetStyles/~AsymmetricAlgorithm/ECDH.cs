@@ -34,9 +34,9 @@ namespace Honoo.BouncyCastle.NetStyles
         private ECDHBasicAgreement _agreementA = null;
         private ECDHBasicAgreement _agreementB = null;
         private byte[] _g = null;
+        private int _keySize = DEFAULT_KEY_SIZE;
         private byte[] _p = null;
         private BigInteger _pmsB = null;
-
         private byte[] _publicKeyA = null;
         private byte[] _publicKeyB = null;
 
@@ -49,6 +49,9 @@ namespace Honoo.BouncyCastle.NetStyles
                 return (byte[])_g.Clone();
             }
         }
+
+        /// <inheritdoc/>
+        public int KeySize => _keySize;
 
         /// <inheritdoc/>
         public byte[] P
@@ -88,28 +91,22 @@ namespace Honoo.BouncyCastle.NetStyles
 
         #region Interfaces
 
-        /// <inheritdoc/>
-        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeA GetKeyExchangeAInterface()
+        /// <summary>
+        /// Gets key exchange algorithm party A's interface.
+        /// </summary>
+        /// <returns></returns>
+        public IKeyExchangeA GetKeyExchangeAInterface()
         {
             return this;
         }
 
-        /// <inheritdoc/>
-        public override IKeyExchangeB GetKeyExchangeBInterface()
+        /// <summary>
+        /// Gets key exchange algorithm party B's interface.
+        /// </summary>
+        /// <returns></returns>
+        public IKeyExchangeB GetKeyExchangeBInterface()
         {
             return this;
-        }
-
-        /// <inheritdoc/>
-        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            throw new NotImplementedException();
         }
 
         #endregion Interfaces
@@ -146,6 +143,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _g = parameters.G.ToByteArray();
             SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keyPair.Public);
             _publicKeyA = publicKeyInfo.GetEncoded();
+            _keySize = keySize;
             //
             _agreementB = null;
             _pmsB = null;
@@ -168,6 +166,7 @@ namespace Honoo.BouncyCastle.NetStyles
             SubjectPublicKeyInfo publicKeyInfo = SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(keyPair.Public);
             _publicKeyB = publicKeyInfo.GetEncoded();
             _pmsB = _agreementB.CalculateAgreement(publicKeyAlice);
+            _keySize = ((ECPublicKeyParameters)keyPair.Public).Parameters.Curve.FieldSize;
             //
             _agreementA = null;
             _p = null;
@@ -209,9 +208,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <summary>
-        /// Imports a byte array that represents asymmetric algorithm key information. Always throw <see cref="NotImplementedException"/>.
+        /// Imports a byte array that represents encrypted asymmetric algorithm key information. Always throw <see cref="NotImplementedException"/>.
         /// </summary>
-        /// <param name="privateKeyInfo">A byte buffer that represents an asymmetric algorithm private key.</param>
+        /// <param name="privateKeyInfo">A byte buffer that represents an encrypted asymmetric algorithm private key.</param>
         /// <param name="password">Using decrypt private key.</param>
         public override void ImportKeyInfo(byte[] privateKeyInfo, string password)
         {
@@ -246,9 +245,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <summary>
-        /// Imports a pem string that represents asymmetric algorithm private key information. Always throw <see cref="NotImplementedException"/>.
+        /// Imports a pem string that represents encrypted asymmetric algorithm private key information. Always throw <see cref="NotImplementedException"/>.
         /// </summary>
-        /// <param name="privateKeyPem">A pem string that represents an asymmetric algorithm private private key.</param>
+        /// <param name="privateKeyPem">A pem string that represents an encrypted asymmetric algorithm private private key.</param>
         /// <param name="password">Using decrypt private key.</param>
         public override void ImportPem(string privateKeyPem, string password)
         {
@@ -270,6 +269,7 @@ namespace Honoo.BouncyCastle.NetStyles
         /// Determines whether the specified size is valid for the current algorithm.
         /// </summary>
         /// <param name="keySize">Legal key size 192, 224, 239, 256, 384, 521.</param>
+        /// <param name="exception">Exception message.</param>
         /// <returns></returns>
         public bool ValidKeySize(int keySize, out string exception)
         {

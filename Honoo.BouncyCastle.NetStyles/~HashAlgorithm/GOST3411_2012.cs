@@ -15,6 +15,7 @@ namespace Honoo.BouncyCastle.NetStyles
         private const string NAME = "GOST3411-2012-";
         private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(256, 512, 256) };
         private IDigest _digest;
+
         #endregion Properties
 
         #region Construction
@@ -42,6 +43,7 @@ namespace Honoo.BouncyCastle.NetStyles
         {
             return new GOST3411_2012(hashSize);
         }
+
         /// <inheritdoc/>
         public override byte[] ComputeFinal()
         {
@@ -53,6 +55,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _digest.DoFinal(hash, 0);
             return hash;
         }
+
         /// <inheritdoc/>
         public override void Reset()
         {
@@ -68,6 +71,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             _digest.BlockUpdate(buffer, offset, length);
         }
+
         internal static HashAlgorithmName GetAlgorithmName(int hashSize)
         {
             return new HashAlgorithmName($"{NAME}{hashSize}",
@@ -90,7 +94,6 @@ namespace Honoo.BouncyCastle.NetStyles
             }
         }
 
- 
         private IDigest GetDigest()
         {
             return GetDigest(_hashSize);

@@ -3,7 +3,7 @@
     /// <summary>
     /// Symmetric algorithm padding mode.
     /// </summary>
-    public enum SymmetricPaddingMode 
+    public enum SymmetricPaddingMode
     {
         /// <summary>
         /// NoPadding padding mode.

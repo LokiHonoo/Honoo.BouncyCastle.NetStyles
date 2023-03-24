@@ -1,7 +1,7 @@
 ﻿namespace Honoo.BouncyCastle.NetStyles.X509
 {
     /// <summary>
-    /// X509Extension label.
+    /// X509 extension label.
     /// </summary>
     [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0079:请删除不必要的忽略", Justification = "<挂起>")]
     public enum X509ExtensionLabel

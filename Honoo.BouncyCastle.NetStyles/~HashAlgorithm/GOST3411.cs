@@ -16,6 +16,7 @@ namespace Honoo.BouncyCastle.NetStyles
         private const string NAME = "GOST3411";
         private readonly byte[] _substitutionBox;
         private IDigest _digest;
+
         #endregion Properties
 
         #region Construction
@@ -47,6 +48,7 @@ namespace Honoo.BouncyCastle.NetStyles
         {
             return new GOST3411();
         }
+
         /// <summary>
         /// Creates an instance of the algorithm.
         /// </summary>
@@ -68,6 +70,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _digest.DoFinal(hash, 0);
             return hash;
         }
+
         /// <inheritdoc/>
         public override void Reset()
         {
@@ -83,6 +86,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             _digest.BlockUpdate(buffer, offset, length);
         }
+
         internal static HashAlgorithmName GetAlgorithmName()
         {
             return new HashAlgorithmName(NAME, HASH_SIZE, () => { return new Gost3411Digest(); }, () => { return new GOST3411(); });

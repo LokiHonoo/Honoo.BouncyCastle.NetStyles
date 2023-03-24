@@ -6,6 +6,11 @@
     public interface IKeyExchangeB
     {
         /// <summary>
+        /// Gets key size bits.
+        /// </summary>
+        int KeySize { get; }
+
+        /// <summary>
         /// Gets the asymmetric algorithm kind of the algorithm.
         /// </summary>
         AsymmetricAlgorithmKind Kind { get; }
@@ -28,7 +33,7 @@
         byte[] DeriveKeyMaterial(bool unsigned);
 
         /// <summary>
-        /// Renew key exchange parameters of the algorithm.
+        /// Generate new parameters of algorithm party B, Using by party A's qualified parameters.
         /// </summary>
         /// <param name="p">The party A's P value.</param>
         /// <param name="g">The party A's G value.</param>

@@ -124,18 +124,6 @@ namespace Honoo.BouncyCastle.NetStyles
         public static SignatureAlgorithmName SHA256withPLAIN_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, ECDSASignatureExtension.Plain);
 
         /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_224withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_224, ECDSASignatureExtension.ECDSA);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_256withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_256, ECDSASignatureExtension.ECDSA);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_384withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_384, ECDSASignatureExtension.ECDSA);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_512withECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_512, ECDSASignatureExtension.ECDSA);
-
-        /// <summary></summary>
         public static SignatureAlgorithmName SHA384withCVC_ECDSA { get; } = ECDSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, ECDSASignatureExtension.CVC);
 
         /// <summary></summary>
@@ -160,22 +148,11 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <summary></summary>
         public static SignatureAlgorithmName SHA1withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA1, DSASignatureEncodingMode.Standard);
 
+        /// <summary></summary>
         public static SignatureAlgorithmName SHA224withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA224, DSASignatureEncodingMode.Standard);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA256withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA256, DSASignatureEncodingMode.Standard);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_224withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_224, DSASignatureEncodingMode.Standard);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_256withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_256, DSASignatureEncodingMode.Standard);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_384withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_384, DSASignatureEncodingMode.Standard);
-
-        /// <summary></summary>
-        public static SignatureAlgorithmName SHA3_512withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA3_512, DSASignatureEncodingMode.Standard);
 
         /// <summary></summary>
         public static SignatureAlgorithmName SHA384withDSA { get; } = DSA.GetSignatureAlgorithmName(HashAlgorithmName.SHA384, DSASignatureEncodingMode.Standard);
@@ -199,7 +176,7 @@ namespace Honoo.BouncyCastle.NetStyles
 
         #region Properties
 
-        private readonly string _asn1Algorithm;
+        private readonly string _asn1Identifier;
         private readonly GetAlgorithmCallback _getAlgorithm;
         private readonly string _name;
         private readonly string _oid;
@@ -214,7 +191,12 @@ namespace Honoo.BouncyCastle.NetStyles
         /// </summary>
         public string Oid => _oid;
 
-        internal string Asn1Algorithm => _asn1Algorithm;
+        /// <summary>
+        /// Gets this algorithm's Asn1 identifier used by certificate signning.
+        /// It's Oid if signature algorithm not parameters, otherwise is name e.g. MGF1.
+        /// </summary>
+        internal string Asn1Identifier => _asn1Identifier;
+
         internal GetAlgorithmCallback GetAlgorithm => _getAlgorithm;
 
         #endregion Properties
@@ -226,7 +208,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _name = name;
             DerObjectIdentifier oid = GetOid(name);
             _oid = oid == null ? string.Empty : oid.Id;
-            _asn1Algorithm = GetAsn1AlgorithmName(name, oid);
+            _asn1Identifier = GetAsn1Identifier(name, oid);
             _getAlgorithm = getAlgorithm;
         }
 
@@ -245,10 +227,6 @@ namespace Honoo.BouncyCastle.NetStyles
                 SHA256withECDSA,
                 SHA384withECDSA,
                 SHA512withECDSA,
-                SHA3_224withECDSA,
-                SHA3_256withECDSA,
-                SHA3_384withECDSA,
-                SHA3_512withECDSA,
 
                 SHA1withCVC_ECDSA,
                 SHA224withCVC_ECDSA,
@@ -292,10 +270,6 @@ namespace Honoo.BouncyCastle.NetStyles
                 SHA256withDSA,
                 SHA384withDSA,
                 SHA512withDSA,
-                SHA3_224withDSA,
-                SHA3_256withDSA,
-                SHA3_384withDSA,
-                SHA3_512withDSA,
 
                 GOST3411withGOST3410,
 
@@ -327,10 +301,6 @@ namespace Honoo.BouncyCastle.NetStyles
                 case "1.2.840.10045.4.3.2": case "SHA256WITHECDSA": case "SHA-256WITHECDSA": algorithmName = SHA256withECDSA; return true;
                 case "1.2.840.10045.4.3.3": case "SHA384WITHECDSA": case "SHA-384WITHECDSA": algorithmName = SHA384withECDSA; return true;
                 case "1.2.840.10045.4.3.4": case "SHA512WITHECDSA": case "SHA-512WITHECDSA": algorithmName = SHA512withECDSA; return true;
-                case "2.16.840.1.101.3.4.3.9": case "SHA3-224WITHECDSA": case "SHA-3-224WITHECDSA": algorithmName = SHA3_224withECDSA; return true;
-                case "2.16.840.1.101.3.4.3.10": case "SHA3-256WITHECDSA": case "SHA-3-256WITHECDSA": algorithmName = SHA3_256withECDSA; return true;
-                case "2.16.840.1.101.3.4.3.11": case "SHA3-384WITHECDSA": case "SHA-3-384WITHECDSA": algorithmName = SHA3_384withECDSA; return true;
-                case "2.16.840.1.101.3.4.3.12": case "SHA3-512WITHECDSA": case "SHA-3-512WITHECDSA": algorithmName = SHA3_512withECDSA; return true;
 
                 case "0.4.0.127.0.7.2.2.2.2.1": case "SHA1WITHCVC-ECDSA": case "SHA-1WITHCVC-ECDSA": algorithmName = SHA1withCVC_ECDSA; return true;
                 case "0.4.0.127.0.7.2.2.2.2.2": case "SHA224WITHCVC-ECDSA": case "SHA-224WITHCVC-ECDSA": algorithmName = SHA224withCVC_ECDSA; return true;
@@ -374,10 +344,6 @@ namespace Honoo.BouncyCastle.NetStyles
                 case "2.16.840.1.101.3.4.3.2": case "SHA256WITHDSA": case "SHA-256WITHDSA": algorithmName = SHA256withDSA; return true;
                 case "2.16.840.1.101.3.4.3.3": case "SHA384WITHDSA": case "SHA-384WITHDSA": algorithmName = SHA384withDSA; return true;
                 case "2.16.840.1.101.3.4.3.4": case "SHA512WITHDSA": case "SHA-512WITHDSA": algorithmName = SHA512withDSA; return true;
-                case "2.16.840.1.101.3.4.3.5": case "SHA3-224WITHDSA": case "SHA-3-224WITHDSA": algorithmName = SHA3_224withDSA; return true;
-                case "2.16.840.1.101.3.4.3.6": case "SHA3-256WITHDSA": case "SHA-3-256WITHDSA": algorithmName = SHA3_256withDSA; return true;
-                case "2.16.840.1.101.3.4.3.7": case "SHA3-384WITHDSA": case "SHA-3-384WITHDSA": algorithmName = SHA3_384withDSA; return true;
-                case "2.16.840.1.101.3.4.3.8": case "SHA3-512WITHDSA": case "SHA-3-512WITHDSA": algorithmName = SHA3_512withDSA; return true;
 
                 case "1.2.643.2.2.4": case "GOST3411WITHGOST3410": case "GOST3410": case "GOST3410-94": algorithmName = GOST3411withGOST3410; return true;
 
@@ -431,7 +397,7 @@ namespace Honoo.BouncyCastle.NetStyles
                                 algorithmName = RSA.GetSignatureAlgorithmName(hashAlgorithmName, RSASignaturePaddingMode.PKCS1);
                                 return true;
 
-                            case "RSA/ISO9796-2":
+                            case "RSA-ISO9796-2":
                             case "RSAANDISO9796-2":
                             case "ISO9796-2":
                                 algorithmName = RSA.GetSignatureAlgorithmName(hashAlgorithmName, RSASignaturePaddingMode.ISO9796_2);
@@ -441,8 +407,8 @@ namespace Honoo.BouncyCastle.NetStyles
                                 algorithmName = RSA.GetSignatureAlgorithmName(hashAlgorithmName, RSASignaturePaddingMode.MGF1);
                                 return true;
 
-                            case "RSA/X9.31":
-                            case "RSA/X931":
+                            case "RSA-X9.31":
+                            case "RSA-X931":
                             case "RSAANDX931":
                             case "RSAANDX9.31":
                                 algorithmName = RSA.GetSignatureAlgorithmName(hashAlgorithmName, RSASignaturePaddingMode.X931);
@@ -488,7 +454,7 @@ namespace Honoo.BouncyCastle.NetStyles
             return _name;
         }
 
-        private static string GetAsn1AlgorithmName(string name, DerObjectIdentifier oid)
+        private static string GetAsn1Identifier(string name, DerObjectIdentifier oid)
         {
             switch (name.ToUpperInvariant())
             {

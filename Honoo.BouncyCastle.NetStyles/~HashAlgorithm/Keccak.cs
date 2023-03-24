@@ -11,7 +11,9 @@ namespace Honoo.BouncyCastle.NetStyles
     public sealed class Keccak : HashAlgorithm
     {
         #region Properties
+
         private const string NAME = "Keccak";
+
         private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[]
         {
             new KeySizes(128, 128, 0),
@@ -23,6 +25,7 @@ namespace Honoo.BouncyCastle.NetStyles
         };
 
         private IDigest _digest;
+
         #endregion Properties
 
         #region Construction
@@ -50,6 +53,7 @@ namespace Honoo.BouncyCastle.NetStyles
         {
             return new Keccak(hashSize);
         }
+
         /// <inheritdoc/>
         public override byte[] ComputeFinal()
         {
@@ -61,6 +65,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _digest.DoFinal(hash, 0);
             return hash;
         }
+
         /// <inheritdoc/>
         public override void Reset()
         {
@@ -76,6 +81,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             _digest.BlockUpdate(buffer, offset, length);
         }
+
         internal static HashAlgorithmName GetAlgorithmName(int hashSize)
         {
             return new HashAlgorithmName($"{NAME}{hashSize}",

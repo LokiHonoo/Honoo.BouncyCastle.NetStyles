@@ -11,7 +11,6 @@ using Org.BouncyCastle.Math.EC.Multiplier;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using System;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -20,33 +19,41 @@ namespace Honoo.BouncyCastle.NetStyles
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class ECGOST3410 : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
+    public sealed class ECGOST3410 : AsymmetricAlgorithm, ISignatureAlgorithm
     {
         #region Properties
 
         private const ECGOST3410EllipticCurve DEFAULT_CURVE = ECGOST3410EllipticCurve.GostR3410_2001_CryptoPro_A;
         private const string NAME = "ECGOST3410";
-        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.GOST3411;
+        private HashAlgorithmName _hashAlgorithmName = HashAlgorithmName.GOST3411;
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
         /// <inheritdoc/>
-        public HashAlgorithmName HashAlgorithm
+        public HashAlgorithmName HashAlgorithmName
         {
-            get => _hashAlgorithm;
+            get => _hashAlgorithmName;
             set
             {
-                if (value != _hashAlgorithm)
+                if (value != _hashAlgorithmName)
                 {
                     _signer = null;
                     _verifier = null;
-                    _hashAlgorithm = value ?? throw new CryptographicException("This hash algorithm can't be null.");
+                    _hashAlgorithmName = value ?? throw new CryptographicException("This hash algorithm can't be null.");
                 }
             }
         }
 
         /// <inheritdoc/>
-        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm);
+        public SignatureAlgorithmName SignatureAlgorithmName
+        {
+            get
+            {
+                string mechanism = GetSignatureAlgorithmMechanism(_hashAlgorithmName);
+                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
+                return algorithmName;
+            }
+        }
 
         #endregion Properties
 
@@ -60,34 +67,6 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         #endregion Construction
-
-        #region Interfaces
-
-        /// <inheritdoc/>
-        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeA GetKeyExchangeAInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeB GetKeyExchangeBInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            return this;
-        }
-
-        #endregion Interfaces
 
         #region GenerateParameters
 
@@ -216,7 +195,7 @@ namespace Honoo.BouncyCastle.NetStyles
                 else
                 {
                     publicKey = (ECPublicKeyParameters)obj;
-                }              
+                }
                 _privateKey = privateKey;
                 _publicKey = publicKey;
                 _signer = null;
@@ -344,7 +323,7 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm)
         {
             return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm),
-                                              () => { return new ECGOST3410() { _hashAlgorithm = hashAlgorithm }; });
+                                              () => { return new ECGOST3410() { _hashAlgorithmName = hashAlgorithm }; });
         }
 
         private static DerObjectIdentifier GetNamedOid(ECGOST3410EllipticCurve ellipticCurve)
@@ -375,7 +354,7 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 if (_signer == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     _signer = new Gost3410DigestSigner(new ECGost3410Signer(), digest);
                     _signer.Init(true, _privateKey);
                 }
@@ -384,7 +363,7 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 if (_verifier == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     _verifier = new Gost3410DigestSigner(new ECGost3410Signer(), digest);
                     _verifier.Init(false, _publicKey);
                 }

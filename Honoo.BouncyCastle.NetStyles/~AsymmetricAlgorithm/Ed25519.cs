@@ -5,12 +5,10 @@ using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
-using Org.BouncyCastle.Math.EC.Multiplier;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
-using System;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -19,7 +17,7 @@ namespace Honoo.BouncyCastle.NetStyles
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class Ed25519 : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
+    public sealed class Ed25519 : AsymmetricAlgorithm, ISignatureAlgorithm
     {
         #region Properties
 
@@ -30,12 +28,21 @@ namespace Honoo.BouncyCastle.NetStyles
         private ISigner _verifier = null;
 
         /// <summary>
-        /// Ed25519 not need hash algorithm. Throw <see cref="NotImplementedException"/> always.
+        /// Ed25519 not need hash algorithm. It's null always.
         /// </summary>
-        public HashAlgorithmName HashAlgorithm { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public HashAlgorithmName HashAlgorithmName
+        { get => null; set { } }
 
         /// <inheritdoc/>
-        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_signatureInstance);
+        public SignatureAlgorithmName SignatureAlgorithmName
+        {
+            get
+            {
+                string mechanism = GetSignatureAlgorithmMechanism(_signatureInstance);
+                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
+                return algorithmName;
+            }
+        }
 
         /// <summary>
         /// Represents the signature EdDSA instance (RFC-8032) used in the symmetric algorithm.
@@ -75,34 +82,6 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         #endregion Construction
-
-        #region Interfaces
-
-        /// <inheritdoc/>
-        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeA GetKeyExchangeAInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeB GetKeyExchangeBInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            return this;
-        }
-
-        #endregion Interfaces
 
         #region GenerateParameters
 
@@ -168,6 +147,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _verifier = null;
             _initialized = true;
         }
+
         /// <inheritdoc/>
         public override void ImportParameters(AsymmetricKeyParameter asymmetricKey)
         {
@@ -198,6 +178,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _verifier = null;
             _initialized = true;
         }
+
         /// <inheritdoc/>
         public override void ImportPem(string keyPem)
         {

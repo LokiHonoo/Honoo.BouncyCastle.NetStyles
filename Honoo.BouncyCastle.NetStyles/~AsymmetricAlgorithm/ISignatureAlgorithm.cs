@@ -3,17 +3,17 @@
     /// <summary>
     /// Asymmetric signature algorithm interface.
     /// </summary>
-    public interface IAsymmetricSignatureAlgorithm : IAsymmetricAlgorithm
+    public interface ISignatureAlgorithm : IAsymmetricAlgorithm
     {
         /// <summary>
         /// Get or set Hash algorithm for signature.
         /// </summary>
-        HashAlgorithmName HashAlgorithm { get; set; }
+        HashAlgorithmName HashAlgorithmName { get; set; }
 
         /// <summary>
         /// Gets signature algorithm name.
         /// </summary>
-        string SignatureAlgorithm { get; }
+        SignatureAlgorithmName SignatureAlgorithmName { get; }
 
         /// <summary>
         /// Reset signer/verifier calculator of the algorithm.

@@ -17,6 +17,7 @@ namespace Honoo.BouncyCastle.NetStyles
         private readonly byte[] _customization;
         private readonly byte[] _nist;
         private IDigest _digest;
+
         #endregion Properties
 
         #region Construction

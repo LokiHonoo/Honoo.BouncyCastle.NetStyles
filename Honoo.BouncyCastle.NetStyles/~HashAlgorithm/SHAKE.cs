@@ -11,9 +11,11 @@ namespace Honoo.BouncyCastle.NetStyles
     public sealed class SHAKE : HashAlgorithm
     {
         #region Properties
+
         private const string NAME = "SHAKE";
         private static readonly KeySizes[] LEGAL_HASH_SIZES = new KeySizes[] { new KeySizes(256, 512, 256) };
         private IDigest _digest;
+
         #endregion Properties
 
         #region Construction
@@ -41,6 +43,7 @@ namespace Honoo.BouncyCastle.NetStyles
         {
             return new SHAKE(hashSize);
         }
+
         /// <inheritdoc/>
         public override byte[] ComputeFinal()
         {
@@ -52,6 +55,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _digest.DoFinal(hash, 0);
             return hash;
         }
+
         /// <inheritdoc/>
         public override void Reset()
         {
@@ -67,6 +71,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             _digest.BlockUpdate(buffer, offset, length);
         }
+
         internal static HashAlgorithmName GetAlgorithmName(int hashSize)
         {
             return new HashAlgorithmName($"{NAME}{hashSize / 2}-{hashSize}",

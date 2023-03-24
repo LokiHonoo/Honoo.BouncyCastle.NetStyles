@@ -24,6 +24,8 @@ namespace Test
             _ignore = 0;
             Demo1();
             Demo2();
+            DoSM2();
+            DoECDSA();
             DoDSA();
             DoRSA();
             DoElGamal();
@@ -48,7 +50,7 @@ namespace Test
 
         private static void Demo2()
         {
-            IAsymmetricEncryptionAlgorithm elGamal1 = new ElGamal().GetEncryptionInterface();
+            IAsymmetricEncryptionAlgorithm elGamal1 = new ElGamal();
             byte[] keyInfo = elGamal1.ExportKeyInfo(false);
 
             IAsymmetricEncryptionAlgorithm elGamal2 = (IAsymmetricEncryptionAlgorithm)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.ElGamal);
@@ -76,6 +78,17 @@ namespace Test
             var pubKey = alg1.ExportParameters(false);
             alg2.ImportParameters(pirKey);
             alg2.ImportParameters(pubKey);
+        }
+
+        private static void DoECDSA()
+        {
+            ECDSA alg1 = new ECDSA();
+            var curves = (EllipticCurve[])Enum.GetValues(typeof(EllipticCurve));
+            foreach (var curve in curves)
+            {
+                alg1.GenerateParameters(curve);
+                alg1.ExportPem(false);
+            }
         }
 
         private static void DoElGamal()
@@ -110,8 +123,8 @@ namespace Test
                 alg2.Padding = padding;
                 StringBuilder title = new StringBuilder();
                 title.Append($"{alg1.Name}-{alg1.KeySize}/{padding}".PadRight(24));
-                title.Append($"{alg2.EncryptInputLength}/{alg2.EncryptOutputLength}/{alg2.DecryptInputLength}/{alg2.DecryptOutputLength}".PadRight(16));
-                title.Append($"{alg1.EncryptInputLength}/{alg1.EncryptOutputLength}/{alg1.DecryptInputLength}/{alg1.DecryptOutputLength}");
+                title.Append(alg2.GetLegalInputLength(true).ToString().PadRight(12));
+                title.Append(alg1.GetLegalInputLength(false).ToString().PadRight(12));
                 alg2.Encrypt(_input);
                 byte[] enc = alg2.Encrypt(_input);
                 alg1.Decrypt(enc);
@@ -153,8 +166,8 @@ namespace Test
                 alg2.Padding = padding;
                 StringBuilder title = new StringBuilder();
                 title.Append($"{alg1.Name}-{alg1.KeySize}/{padding}".PadRight(24));
-                title.Append($"{alg2.EncryptInputLength}/{alg2.EncryptOutputLength}/{alg2.DecryptInputLength}/{alg2.DecryptOutputLength}".PadRight(16));
-                title.Append($"{alg1.EncryptInputLength}/{alg1.EncryptOutputLength}/{alg1.DecryptInputLength}/{alg1.DecryptOutputLength}");
+                title.Append(alg2.GetLegalInputLength(true).ToString().PadRight(12));
+                title.Append(alg1.GetLegalInputLength(false).ToString().PadRight(12));
                 alg2.Encrypt(_input);
                 byte[] enc = alg2.Encrypt(_input);
                 alg1.Decrypt(enc);
@@ -163,9 +176,35 @@ namespace Test
             }
         }
 
+        private static void DoSM2()
+        {
+            byte[] bytes = new byte[16777];
+            Common.Random.NextBytes(bytes);
+            SM2 alg1 = new SM2();
+            SM2 alg2 = new SM2();
+            alg1.HashAlgorithmName = HashAlgorithmName.SHA256;
+            alg1.GenerateParameters(SM2EllipticCurve.WapiP192v1);
+            var pirKey = alg1.ExportParameters(true);
+            var pubKey = alg1.ExportParameters(false);
+            alg2.ImportParameters(pirKey);
+            alg2.ImportParameters(pubKey);
+            alg2.Encrypt(bytes);
+            byte[] enc = alg2.Encrypt(bytes);
+            alg1.Decrypt(enc);
+            byte[] dec = alg1.Decrypt(enc);
+            StringBuilder title = new StringBuilder();
+            title.Append(alg1.Name.PadRight(24));
+            title.Append(alg2.GetLegalInputLength(true).ToString().PadRight(12));
+            title.Append(alg1.GetLegalInputLength(false).ToString().PadRight(12));
+            WriteResult(title.ToString(), bytes, enc, dec);
+        }
+
         private static void WriteResult(string title, byte[] input, byte[] enc, byte[] dec)
         {
-            string message = (title + " ").PadRight(70, '-');
+            StringBuilder message1 = new StringBuilder();
+            message1.Append((title + " ").PadRight(50, ' '));
+            message1.Append($"{input.Length}/{enc.Length}/{dec.Length} ");
+            string message = message1.ToString().PadRight(80, '-');
             if (dec.SequenceEqual(input))
             {
                 Console.WriteLine($"{message} same");

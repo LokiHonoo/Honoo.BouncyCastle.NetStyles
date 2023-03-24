@@ -18,6 +18,7 @@ namespace Honoo.BouncyCastle.NetStyles
         private readonly byte[] _personalization;
         private readonly byte[] _salt;
         private IDigest _digest;
+
         #endregion Properties
 
         #region Construction
@@ -102,6 +103,7 @@ namespace Honoo.BouncyCastle.NetStyles
                                          () => { return new Blake2sDigest(hashSize); },
                                          () => { return new BLAKE2s(hashSize); });
         }
+
         internal static bool ValidHashSize(int hashSize, out string exception)
         {
             if (DetectionUtilities.ValidSize(LEGAL_HASH_SIZES, hashSize))

@@ -20,7 +20,7 @@ namespace Honoo.BouncyCastle.NetStyles
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class DSA : AsymmetricAlgorithm, IAsymmetricSignatureAlgorithm
+    public sealed class DSA : AsymmetricAlgorithm, ISignatureAlgorithm
     {
         #region Properties
 
@@ -28,23 +28,23 @@ namespace Honoo.BouncyCastle.NetStyles
         private const int DEFAULT_KEY_SIZE = 1024;
         private const string NAME = "DSA";
         private static readonly KeySizes[] LEGAL_KEY_SIZES = new KeySizes[] { new KeySizes(512, 1024, 64) };
-        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
+        private HashAlgorithmName _hashAlgorithmName = HashAlgorithmName.SHA256;
         private int _keySize = DEFAULT_KEY_SIZE;
         private DSASignatureEncodingMode _signatureEncoding = DSASignatureEncodingMode.Standard;
         private ISigner _signer = null;
         private ISigner _verifier = null;
 
         /// <inheritdoc/>
-        public HashAlgorithmName HashAlgorithm
+        public HashAlgorithmName HashAlgorithmName
         {
-            get => _hashAlgorithm;
+            get => _hashAlgorithmName;
             set
             {
-                if (value != _hashAlgorithm)
+                if (value != _hashAlgorithmName)
                 {
                     _signer = null;
                     _verifier = null;
-                    _hashAlgorithm = value ?? throw new CryptographicException("This hash algorithm can't be null.");
+                    _hashAlgorithmName = value ?? throw new CryptographicException("This hash algorithm can't be null.");
                 }
             }
         }
@@ -60,7 +60,15 @@ namespace Honoo.BouncyCastle.NetStyles
         public KeySizes[] LegalKeySizes => (KeySizes[])LEGAL_KEY_SIZES.Clone();
 
         /// <inheritdoc/>
-        public string SignatureAlgorithm => GetSignatureAlgorithmMechanism(_hashAlgorithm, _signatureEncoding);
+        public SignatureAlgorithmName SignatureAlgorithmName
+        {
+            get
+            {
+                string mechanism = GetSignatureAlgorithmMechanism(_hashAlgorithmName, _signatureEncoding);
+                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
+                return algorithmName;
+            }
+        }
 
         /// <summary>
         /// Represents the signature encoding mode used in the symmetric algorithm.
@@ -91,34 +99,6 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         #endregion Construction
-
-        #region Interfaces
-
-        /// <inheritdoc/>
-        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeA GetKeyExchangeAInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeB GetKeyExchangeBInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            return this;
-        }
-
-        #endregion Interfaces
 
         #region GenerateParameters
 
@@ -461,6 +441,7 @@ namespace Honoo.BouncyCastle.NetStyles
         /// Determines whether the specified size is valid for the current algorithm.
         /// </summary>
         /// <param name="keySize">Legal key size 512-1024 bits (64 bits increments).</param>
+        /// <param name="exception">Exception message.</param>
         /// <returns></returns>
         public bool ValidKeySize(int keySize, out string exception)
         {
@@ -484,7 +465,7 @@ namespace Honoo.BouncyCastle.NetStyles
         internal static SignatureAlgorithmName GetSignatureAlgorithmName(HashAlgorithmName hashAlgorithm, DSASignatureEncodingMode signatureEncoding)
         {
             return new SignatureAlgorithmName(GetSignatureAlgorithmMechanism(hashAlgorithm, signatureEncoding),
-                                              () => { return new DSA() { _hashAlgorithm = hashAlgorithm, _signatureEncoding = signatureEncoding }; });
+                                              () => { return new DSA() { _hashAlgorithmName = hashAlgorithm, _signatureEncoding = signatureEncoding }; });
         }
 
         private static string GetSignatureAlgorithmMechanism(HashAlgorithmName hashAlgorithm, DSASignatureEncodingMode signatureEncoding)
@@ -505,7 +486,7 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 if (_signer == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     switch (_signatureEncoding)
                     {
                         case DSASignatureEncodingMode.Standard: _signer = new DsaDigestSigner(new DsaSigner(), digest, StandardDsaEncoding.Instance); break;
@@ -519,7 +500,7 @@ namespace Honoo.BouncyCastle.NetStyles
             {
                 if (_verifier == null)
                 {
-                    IDigest digest = _hashAlgorithm.GetEngine();
+                    IDigest digest = _hashAlgorithmName.GetEngine();
                     switch (_signatureEncoding)
                     {
                         case DSASignatureEncodingMode.Standard: _verifier = new DsaDigestSigner(new DsaSigner(), digest, StandardDsaEncoding.Instance); break;

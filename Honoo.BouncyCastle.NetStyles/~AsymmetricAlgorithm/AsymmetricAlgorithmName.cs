@@ -138,18 +138,32 @@ namespace Honoo.BouncyCastle.NetStyles
                 return false;
             }
             mechanism = mechanism.Trim().Replace('_', '-').Replace('/', '-').ToUpperInvariant();
+            //switch (mechanism)
+            //{
+            //    case "1.2.840.10040.4.1": case "DSA": algorithmName = DSA; return true;
+            //    case "0.4.0.127.0.7.2.2.1.2": case "ECDH": algorithmName = ECDH; return true;
+            //    case "0.4.0.127.0.7.2.2.2.2": case "ECDSA": algorithmName = ECDSA; return true;
+            //    case "1.2.643.2.2.19": case "ECGOST3410": case "ECGOST3410-2001": algorithmName = ECGOST3410; return true;
+            //    case "1.3.101.112": case "ED25519": algorithmName = Ed25519; return true;
+            //    case "1.3.101.113": case "ED448": algorithmName = Ed448; return true;
+            //    case "1.3.14.7.2.1.1": case "ELGAMAL": algorithmName = ElGamal; return true;
+            //    case "1.2.643.2.2.20": case "GOST3410": case "GOST3410-94": algorithmName = GOST3410; return true;
+            //    case "1.2.840.113549.1.1.1": case "RSA": algorithmName = RSA; return true;
+            //    case "1.2.156.10197.1.301.1": case "1.2.156.10197.1.301.3": case "SM2": algorithmName = SM2; return true;
+            //    default: algorithmName = null; return false;
+            //}
             switch (mechanism)
             {
-                case "1.2.840.10040.4.1": case "DSA": algorithmName = DSA; return true;
-                case "0.4.0.127.0.7.2.2.3.2": case "ECDH": algorithmName = ECDH; return true;
-                case "0.4.0.127.0.7.2.2.2.2": case "ECDSA": algorithmName = ECDSA; return true;
-                case "1.2.643.2.2.19": case "ECGOST3410": case "ECGOST3410-2001": algorithmName = ECGOST3410; return true;
-                case "1.3.101.112": case "ED25519": algorithmName = Ed25519; return true;
-                case "1.3.101.113": case "ED448": algorithmName = Ed448; return true;
-                case "1.3.14.7.2.1.1": case "ELGAMAL": algorithmName = ElGamal; return true;
-                case "1.2.643.2.2.20": case "GOST3410": case "GOST3410-94": algorithmName = GOST3410; return true;
-                case "1.2.840.113549.1.1.1": case "RSA": algorithmName = RSA; return true;
-                case "1.2.156.10197.1.301.1": case "SM2": algorithmName = SM2; return true;
+                case "DSA": algorithmName = DSA; return true;
+                case "ECDH": algorithmName = ECDH; return true;
+                case "ECDSA": algorithmName = ECDSA; return true;
+                case "ECGOST3410": case "ECGOST3410-2001": algorithmName = ECGOST3410; return true;
+                case "ED25519": algorithmName = Ed25519; return true;
+                case "ED448": algorithmName = Ed448; return true;
+                case "1.3.14.7.2.1.1": case "ELGAMAL": algorithmName = ElGamal; return true; // OiwObjectIdentifiers.ElGamalAlgorithm
+                case "GOST3410": case "GOST3410-94": algorithmName = GOST3410; return true;
+                case "1.2.840.113549.1.1.1": case "RSA": algorithmName = RSA; return true; // PkcsObjectIdentifiers.RsaEncryption
+                case "1.2.156.10197.1.301.3": case "SM2": algorithmName = SM2; return true; // GMObjectIdentifiers.sm2encrypt
                 default: algorithmName = null; return false;
             }
         }

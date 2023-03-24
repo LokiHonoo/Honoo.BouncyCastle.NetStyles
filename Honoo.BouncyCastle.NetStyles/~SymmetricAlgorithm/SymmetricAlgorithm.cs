@@ -82,6 +82,7 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <param name="kind"></param>
         /// <param name="blockSize"></param>
         /// <param name="defaultKeySize"></param>
+        /// <param name="defaultIVSize"></param>
         protected SymmetricAlgorithm(string name, SymmetricAlgorithmKind kind, int blockSize, int defaultKeySize, int defaultIVSize)
         {
             _name = name;
@@ -355,15 +356,66 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <summary>
-        /// Reset calculator of the algorithm.
+        /// Get <see cref="System.Security.Cryptography.SymmetricAlgorithm"/> algorithm
+        /// if algorithm is AES/TripleDES, cipher mode is CBC/ECB/CFB, padding mode is None/PKCS7/ANSIX923/ISO10126.
+        /// </summary>
+        /// <returns></returns>
+        public System.Security.Cryptography.SymmetricAlgorithm GetNetAlgorithm()
+        {
+            string name;
+            switch (_name)
+            {
+                case "AES": name = _name; break;
+                case "DESede": name = "TripleDES"; break;
+                default: return null;
+            }
+            CipherMode mode;
+            PaddingMode padding;
+            switch (_mode)
+            {
+                case SymmetricCipherMode.CBC: mode = CipherMode.CBC; break;
+                case SymmetricCipherMode.ECB: mode = CipherMode.ECB; break;
+                case SymmetricCipherMode.CFB: mode = CipherMode.CFB; break;
+                default: return null;
+            }
+            switch (_padding)
+            {
+                case SymmetricPaddingMode.NoPadding: padding = PaddingMode.None; break;
+                case SymmetricPaddingMode.PKCS7: padding = PaddingMode.PKCS7; break;
+                //case SymmetricPaddingMode.Zeros: padding = PaddingMode.Zeros; break;
+                case SymmetricPaddingMode.X923: padding = PaddingMode.ANSIX923; break;
+                case SymmetricPaddingMode.ISO10126: padding = PaddingMode.ISO10126; break;
+                default: return null;
+            }
+            var net = System.Security.Cryptography.SymmetricAlgorithm.Create(name);
+            if (net != null)
+            {
+                net.Mode = mode;
+                net.Padding = padding;
+                net.FeedbackSize = _blockSize;
+                return net;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Reset encryptor/decryptor of the algorithm.
         /// </summary>
         public void Reset()
         {
             /*
              * BUG: GCM/GOFB cipher mode cannot be auto reused. So set null.
              */
-            _encryptor = null;
-            _decryptor = null;
+            if (_mode == SymmetricCipherMode.GOFB || _mode == SymmetricCipherMode.GCM)
+            {
+                _encryptor = null;
+                _decryptor = null;
+            }
+            else
+            {
+                _encryptor.Reset();
+                _decryptor.Reset();
+            }
         }
 
         /// <summary>

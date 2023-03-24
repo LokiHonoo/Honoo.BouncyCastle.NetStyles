@@ -28,7 +28,7 @@ namespace Test
             Demo1();
             Demo2();
             Demo3();
-            DoNET();
+            DoNET2();
             DoAll();
             Console.WriteLine();
             Console.WriteLine();
@@ -184,7 +184,6 @@ namespace Test
                                 cipher.Init(false, para);
                                 dec = cipher.DoFinal(enc);
                             }
-
                             WriteResult(title, input, enc, dec);
                         }
                     }
@@ -206,81 +205,43 @@ namespace Test
             }
         }
 
-        private static void DoNET()
+        private static void DoNET2()
         {
-            var names1 = new SymmetricAlgorithmName[]
+            string[] names = new string[] { "CAST5", "AES", "3DES", "DES" };
+            var modes = (SymmetricCipherMode[])Enum.GetValues(typeof(SymmetricCipherMode));
+            var paddings = (SymmetricPaddingMode[])Enum.GetValues(typeof(SymmetricPaddingMode));
+            for (int i = 0; i < names.Length; i++)
             {
-                SymmetricAlgorithmName.AES,
-                SymmetricAlgorithmName.DESede
-            };
-            string[] names2 = new string[] { "AES", "3DES" };
-            var modes1 = new SymmetricCipherMode[]
-            {
-               SymmetricCipherMode.CBC,
-               SymmetricCipherMode.ECB,
-               //SymmetricCipherMode.OFB,
-               SymmetricCipherMode.CFB,
-               //SymmetricCipherMode.CTS,
-            };
-            var modes2 = new System.Security.Cryptography.CipherMode[]
-            {
-               System.Security.Cryptography.CipherMode.CBC,
-               System.Security.Cryptography.CipherMode.ECB,
-               //System.Security.Cryptography.CipherMode.OFB,
-               System.Security.Cryptography.CipherMode.CFB,
-               //System.Security.Cryptography.CipherMode.CTS,
-            };
-            var paddings1 = new SymmetricPaddingMode[]
-            {
-                SymmetricPaddingMode.NoPadding,
-                SymmetricPaddingMode.PKCS7,
-                //SymmetricPaddingMode.Zeros,
-                SymmetricPaddingMode.X923,
-                SymmetricPaddingMode.ISO10126,
-            };
-            var paddings2 = new System.Security.Cryptography.PaddingMode[]
-            {
-                System.Security.Cryptography.PaddingMode.None,
-                System.Security.Cryptography.PaddingMode.PKCS7,
-                //System.Security.Cryptography.PaddingMode.Zeros,
-                System.Security.Cryptography.PaddingMode.ANSIX923,
-                System.Security.Cryptography.PaddingMode.ISO10126,
-            };
-            for (int i = 0; i < names1.Length; i++)
-            {
-                SymmetricAlgorithm alg = SymmetricAlgorithm.Create(names1[i]);
-                var net = System.Security.Cryptography.SymmetricAlgorithm.Create(names2[i]);
-                for (int j = 0; j < modes1.Length; j++)
+                SymmetricAlgorithmName.TryGetAlgorithmName(names[i], out SymmetricAlgorithmName algorithmName);
+                SymmetricAlgorithm alg = SymmetricAlgorithm.Create(algorithmName);
+                foreach (SymmetricCipherMode mode in modes)
                 {
-                    for (int k = 0; k < paddings1.Length; k++)
+                    foreach (SymmetricPaddingMode padding in paddings)
                     {
-                        if (modes1[j] == SymmetricCipherMode.CTS && paddings1[k] != SymmetricPaddingMode.NoPadding)
+                        alg.Mode = mode;
+                        alg.Padding = padding;
+                        var net = alg.GetNetAlgorithm();
+                        if (net != null)
                         {
-                            continue;
-                        }
-                        byte[] input = _input;
-                        if (paddings1[k] == SymmetricPaddingMode.NoPadding)
-                        {
-                            input = new byte[alg.BlockSize * 3];
-                            Common.Random.NextBytes(input);
-                        }
-                        _total++;
-                        string title = $"{alg.Name}/{modes1[j]}/{paddings1[k]}  BC <--> NET";
-                        alg.Mode = modes1[j];
-                        alg.Padding = paddings1[k];
-                        alg.GenerateParameters();
-                        alg.ExportParameters(out byte[] key, out byte[] iv);
-                        net.Mode = modes2[j];
-                        net.Padding = paddings2[k];
-                        net.FeedbackSize = net.BlockSize;
-                        net.Key = key;
-                        net.IV = iv ?? (new byte[net.BlockSize / 8]);
-                        alg.EncryptFinal(input);
-                        byte[] enc = alg.EncryptFinal(input);
-                        using (var decryptor = net.CreateDecryptor())
-                        {
-                            byte[] dec = decryptor.TransformFinalBlock(enc, 0, enc.Length);
-                            WriteResult(title, input, enc, dec);
+                            byte[] input = _input;
+                            if (padding == SymmetricPaddingMode.NoPadding)
+                            {
+                                input = new byte[alg.BlockSize * 3];
+                                Common.Random.NextBytes(input);
+                            }
+                            _total++;
+                            string title = $"{alg.Name}/{mode}/{padding}  BC <--> NET";
+                            alg.GenerateParameters();
+                            alg.ExportParameters(out byte[] key, out byte[] iv);
+                            net.Key = key;
+                            net.IV = iv ?? (new byte[net.BlockSize / 8]);
+                            alg.EncryptFinal(input);
+                            byte[] enc = alg.EncryptFinal(input);
+                            using (var decryptor = net.CreateDecryptor())
+                            {
+                                byte[] dec = decryptor.TransformFinalBlock(enc, 0, enc.Length);
+                                WriteResult(title, input, enc, dec);
+                            }
                         }
                     }
                 }

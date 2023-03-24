@@ -17,6 +17,7 @@ namespace Test
         internal static void Test()
         {
             CreateCACert();
+            CreateCrl();
             CreateUserCert();
             //
             Console.ReadKey(true);
@@ -28,18 +29,34 @@ namespace Test
             // Issuer work, Create CA private key and self sign certificate.
             //
             _issuerSignatureAlgorithm = SignatureAlgorithmName.SHA256withECDSA;
-            AsymmetricAlgorithm issuerAlgorithm = AsymmetricAlgorithm.Create(_issuerSignatureAlgorithm);
+            ISignatureAlgorithm issuerAlgorithm = AsymmetricAlgorithm.Create(_issuerSignatureAlgorithm);
             byte[] issuerPrivateKeyInfo = issuerAlgorithm.ExportKeyInfo(true);
             X509CertificateRequestGenerator issuerCsrGenerator = new X509CertificateRequestGenerator(_issuerSignatureAlgorithm, issuerPrivateKeyInfo);
-            issuerCsrGenerator.SubjectDN.Add(X509NameLabel.C, "CN");
-            issuerCsrGenerator.SubjectDN.Add(X509NameLabel.CN, "Test CA");
+            issuerCsrGenerator.SubjectDN.Add(new X509NameEntity(X509NameLabel.C, "CN"));
+            issuerCsrGenerator.SubjectDN.Add(new X509NameEntity(X509NameLabel.CN, "Test CA"));
             string issuerCsr = issuerCsrGenerator.GeneratePem();
             X509CertificateV3Generator v3Generator = new X509CertificateV3Generator(_issuerSignatureAlgorithm, issuerPrivateKeyInfo);
-            v3Generator.IssuerDN.Add(X509NameLabel.C, "CN");
-            v3Generator.IssuerDN.Add(X509NameLabel.CN, "Test CA");
+            v3Generator.IssuerDN.Add(new X509NameEntity(X509NameLabel.C, "CN"));
+            v3Generator.IssuerDN.Add(new X509NameEntity(X509NameLabel.CN, "Test CA"));
             v3Generator.SetCertificateRequest(issuerCsr);
             _issuerCer = v3Generator.Generate(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(365));
             _issuerPrivateKeyInfo = issuerPrivateKeyInfo;
+        }
+
+        private static void CreateCrl()
+        {
+            //
+            // Issuer work, Create CA private key and self sign certificate.
+            //
+            _issuerSignatureAlgorithm = SignatureAlgorithmName.SHA256withECDSA;
+            ISignatureAlgorithm issuerAlgorithm = AsymmetricAlgorithm.Create(_issuerSignatureAlgorithm);
+            byte[] issuerPrivateKeyInfo = issuerAlgorithm.ExportKeyInfo(true);
+            X509CertificateRevocationListGenerator generator = new X509CertificateRevocationListGenerator(_issuerSignatureAlgorithm, issuerPrivateKeyInfo);
+            generator.IssuerDN.CopyFromSubjectDN(_issuerCer);
+            generator.Extensions.CopyFrom(_issuerCer);
+            generator.Revocations.Add(new X509CertificateRevocationEntity("F38BC566", 16, DateTime.Now, null));
+            generator.Revocations.Add(new X509CertificateRevocationEntity("136780432367", 10, DateTime.Now, null));
+            generator.Generate(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(365), null);
         }
 
         private static void CreateUserCert()
@@ -48,7 +65,7 @@ namespace Test
             // Issuer work, Create key for subject.
             //
             SignatureAlgorithmName userSignatureAlgorithm = SignatureAlgorithmName.SM3withSM2; //Issuer define of allow user specify.
-            AsymmetricAlgorithm issuerCreateAlgorithmForSubject = AsymmetricAlgorithm.Create(userSignatureAlgorithm);
+            ISignatureAlgorithm issuerCreateAlgorithmForSubject = AsymmetricAlgorithm.Create(userSignatureAlgorithm);
             string algorithmMechanism = userSignatureAlgorithm.Oid; // Send to user
             byte[] userPrivateKeyInfo = issuerCreateAlgorithmForSubject.ExportKeyInfo(true); // Send to user
             Org.BouncyCastle.Crypto.AsymmetricKeyParameter userPublicKey = issuerCreateAlgorithmForSubject.ExportParameters(false);
@@ -58,21 +75,20 @@ namespace Test
             //
             SignatureAlgorithmName.TryGetAlgorithmName(algorithmMechanism, out SignatureAlgorithmName userAlgorithmName);
             X509CertificateRequestGenerator userCreateCsr = new X509CertificateRequestGenerator(userAlgorithmName, userPrivateKeyInfo);
-            userCreateCsr.SubjectDN.Add(X509NameLabel.C, "CN");
-            userCreateCsr.SubjectDN.Add(X509NameLabel.CN, "Test Subject Porject Name");
-            userCreateCsr.SubjectDN.Add(X509NameLabel.EmailAddress, "abc999@test111222.com");
-            var asn1 = new DerOctetString(new BasicConstraints(true));
-            userCreateCsr.Extensions.Add(X509ExtensionLabel.BasicConstraints, new X509Extension(true, asn1));
+            userCreateCsr.SubjectDN.Add(new X509NameEntity(X509NameLabel.C, "CN"));
+            userCreateCsr.SubjectDN.Add(new X509NameEntity(X509NameLabel.CN, "Test Subject Porject Name"));
+            userCreateCsr.SubjectDN.Add(new X509NameEntity(X509NameLabel.EmailAddress, "abc999@test111222.com"));
+            Asn1Encodable asn1 = new BasicConstraints(false);
+            userCreateCsr.Extensions.Add(new X509ExtensionEntity(X509ExtensionLabel.BasicConstraints, true, asn1));
             byte[] csrPem = userCreateCsr.GenerateDer(); // Send to issuer
 
             //
             // Issuer work, Load certificate request and create certificate.
             //
             X509CertificateV3Generator v3generator = new X509CertificateV3Generator(_issuerSignatureAlgorithm, _issuerPrivateKeyInfo);
-            v3generator.IssuerDN.Add(X509NameLabel.C, "CN");
-            v3generator.IssuerDN.Add(X509NameLabel.CN, "Test CA Sign");
-            var asn2 = new DerOctetString(new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.DataEncipherment));
-            v3generator.Extensions.Add(X509ExtensionLabel.KeyUsage, new X509Extension(true, asn2));
+            v3generator.IssuerDN.CopyFromSubjectDN(_issuerCer);
+            Asn1Encodable asn2 = new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.DataEncipherment);
+            v3generator.Extensions.Add(new X509ExtensionEntity(X509ExtensionLabel.KeyUsage, false, asn2));
             v3generator.SetCertificateRequest(csrPem);
             if (v3generator.CertificateRequest.Verify(userPublicKey))
             {

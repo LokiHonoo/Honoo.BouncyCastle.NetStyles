@@ -12,14 +12,17 @@ namespace Honoo.BouncyCastle.NetStyles
         /// Indicates the algorithm is a asymmetric signature algorithm.
         /// </summary>
         Signature = 1,
+
         /// <summary>
         /// Indicates the algorithm is a asymmetric encryption algorithm.
         /// </summary>
         Encryption = 2,
+
         /// <summary>
         /// Indicates the algorithm is a asymmetric signature and encryption algorithm.
         /// </summary>
         SignatureAndEncryption = Signature | Encryption,
+
         /// <summary>
         /// Indicates the algorithm is a asymmetric key exchange algorithm.
         /// </summary>

@@ -54,6 +54,7 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         #endregion Construction
+
         /// <summary>
         /// Creates an instance of the algorithm.
         /// </summary>
@@ -78,6 +79,7 @@ namespace Honoo.BouncyCastle.NetStyles
             _digest.DoFinal(hash, 0);
             return hash;
         }
+
         /// <inheritdoc/>
         public override void Reset()
         {
@@ -93,6 +95,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             _digest.BlockUpdate(buffer, offset, length);
         }
+
         internal static HashAlgorithmName GetAlgorithmName(int hashSize)
         {
             return new HashAlgorithmName($"{NAME}{hashSize}",

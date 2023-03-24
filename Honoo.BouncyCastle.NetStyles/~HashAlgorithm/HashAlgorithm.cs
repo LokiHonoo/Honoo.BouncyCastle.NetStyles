@@ -80,6 +80,15 @@
         }
 
         /// <summary>
+        /// Get <see cref="System.Security.Cryptography.HashAlgorithm"/> if algorithm has .NET implementation.
+        /// </summary>
+        /// <returns></returns>
+        public System.Security.Cryptography.HashAlgorithm GetNetAlgorithm()
+        {
+            return System.Security.Cryptography.HashAlgorithm.Create(_name);
+        }
+
+        /// <summary>
         /// Reset calculator of the algorithm.
         /// </summary>
         public abstract void Reset();

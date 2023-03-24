@@ -11,7 +11,6 @@ using Org.BouncyCastle.Math;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
-using System;
 using System.IO;
 using System.Security.Cryptography;
 
@@ -33,60 +32,8 @@ namespace Honoo.BouncyCastle.NetStyles
         private int _keySize = DEFAULT_KEY_SIZE;
         private AsymmetricEncryptionPaddingMode _padding = AsymmetricEncryptionPaddingMode.PKCS1;
 
-        /// <inheritdoc/>
-        public int DecryptInputLength
-        {
-            get
-            {
-                if (_initialized)
-                {
-                    if (_privateKey == null)
-                    {
-                        return 0;
-                    }
-                    else
-                    {
-                        return _padding == AsymmetricEncryptionPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
-                    }
-                }
-                else
-                {
-                    return _padding == AsymmetricEncryptionPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        public int DecryptOutputLength
-        {
-            get
-            {
-                if (_initialized)
-                {
-                    if (_privateKey == null)
-                    {
-                        return 0;
-                    }
-                    else
-                    {
-                        return GetPaddedLength();
-                    }
-                }
-                else
-                {
-                    return GetPaddedLength();
-                }
-            }
-        }
-
-        /// <inheritdoc/>
-        public int EncryptInputLength => GetPaddedLength();
-
-        /// <inheritdoc/>
-        public int EncryptOutputLength => _padding == AsymmetricEncryptionPaddingMode.ISO9796_1 ? 0 : _keySize / 4;
-
         /// <summary>
-        /// Get or set key size bits.
+        /// Gets key size bits.
         /// </summary>
         public int KeySize => _keySize;
 
@@ -95,7 +42,9 @@ namespace Honoo.BouncyCastle.NetStyles
         /// </summary>
         public KeySizes[] LegalKeySizes => (KeySizes[])LEGAL_KEY_SIZES.Clone();
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Represents the encryption padding mode used in the symmetric algorithm.
+        /// </summary>
         public AsymmetricEncryptionPaddingMode Padding
         {
             get => _padding;
@@ -122,34 +71,6 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         #endregion Construction
-
-        #region Interfaces
-
-        /// <inheritdoc/>
-        public override IAsymmetricEncryptionAlgorithm GetEncryptionInterface()
-        {
-            return this;
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeA GetKeyExchangeAInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IKeyExchangeB GetKeyExchangeBInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
-        public override IAsymmetricSignatureAlgorithm GetSignatureInterface()
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion Interfaces
 
         #region GenerateParameters
 
@@ -344,7 +265,15 @@ namespace Honoo.BouncyCastle.NetStyles
             return _decryptor.ProcessBlock(buffer, offset, length);
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Decrypts data with the asymmetric algorithm. Need set <see cref="Padding"/> = <see cref="AsymmetricEncryptionPaddingMode.OAEP"/>.
+        /// </summary>
+        /// <param name="buffer">The encrypted data buffer.</param>
+        /// <param name="offset">The starting offset to read.</param>
+        /// <param name="length">The length to read.</param>
+        /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
+        /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
+        /// <returns></returns>
         public byte[] Decrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
         {
             if (_padding != AsymmetricEncryptionPaddingMode.OAEP)
@@ -373,7 +302,15 @@ namespace Honoo.BouncyCastle.NetStyles
             return _encryptor.ProcessBlock(buffer, offset, length);
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Encrypts data with the asymmetric algorithm. Need set <see cref="Padding"/> = <see cref="AsymmetricEncryptionPaddingMode.OAEP"/>.
+        /// </summary>
+        /// <param name="buffer">The data buffer to be encrypted.</param>
+        /// <param name="offset">The starting offset to read.</param>
+        /// <param name="length">The length to read.</param>
+        /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
+        /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
+        /// <returns></returns>
         public byte[] Encrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
         {
             if (_padding != AsymmetricEncryptionPaddingMode.OAEP)
@@ -383,6 +320,34 @@ namespace Honoo.BouncyCastle.NetStyles
             InspectParameters();
             _encryptor = GetCipher(true, hashForOAEP, mgf1ForOAEP);
             return _encryptor.ProcessBlock(buffer, offset, length);
+        }
+
+        /// <inheritdoc/>
+        public int GetLegalInputLength(bool forEncryption)
+        {
+            if (forEncryption)
+            {
+                int length = _keySize / 8;
+                switch (_padding)
+                {
+                    case AsymmetricEncryptionPaddingMode.NoPadding: return length - 1;
+                    case AsymmetricEncryptionPaddingMode.PKCS1: return length - 11;
+                    case AsymmetricEncryptionPaddingMode.OAEP: return length - 42;
+                    case AsymmetricEncryptionPaddingMode.ISO9796_1: return 0;
+                    default: throw new CryptographicException("Unsupported padding mode.");
+                }
+            }
+            else
+            {
+                if (_initialized)
+                {
+                    if (_privateKey == null)
+                    {
+                        return 0;
+                    }
+                }
+                return _keySize / 4;
+            }
         }
 
         #endregion Encryption
@@ -400,6 +365,7 @@ namespace Honoo.BouncyCastle.NetStyles
         /// Determines whether the specified size is valid for the current algorithm.
         /// </summary>
         /// <param name="keySize">Legal key size is more than or equal to 8 bits (8 bits increments).</param>
+        /// <param name="exception">Exception message.</param>
         /// <returns></returns>
         public bool ValidKeySize(int keySize, out string exception)
         {
@@ -451,19 +417,6 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             cipher.Init(encryption, encryption ? _publicKey : _privateKey);
             return cipher;
-        }
-
-        private int GetPaddedLength()
-        {
-            int length = _keySize / 8;
-            switch (_padding)
-            {
-                case AsymmetricEncryptionPaddingMode.NoPadding: return length - 1;
-                case AsymmetricEncryptionPaddingMode.PKCS1: return length - 11;
-                case AsymmetricEncryptionPaddingMode.OAEP: return length - 42;
-                case AsymmetricEncryptionPaddingMode.ISO9796_1: return 0;
-                default: throw new CryptographicException("Unsupported padding mode.");
-            }
         }
     }
 }
