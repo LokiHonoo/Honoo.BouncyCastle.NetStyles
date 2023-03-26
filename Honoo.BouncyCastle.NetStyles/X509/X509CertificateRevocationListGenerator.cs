@@ -116,7 +116,7 @@ namespace Honoo.BouncyCastle.NetStyles.X509
         /// <param name="thisUpdate">The time of this update.</param>
         /// <param name="nextUpdate">The time of anticipated next update.</param>
         /// <param name="others">The other certification revocation list.</param>
-        public X509Crl Generate(DateTime thisUpdate, DateTime nextUpdate, X509Crl[] others)
+        public X509Crl Generate(DateTime thisUpdate, DateTime nextUpdate, params X509Crl[] others)
         {
             return GenerateCore(thisUpdate, nextUpdate, others);
         }
@@ -127,7 +127,7 @@ namespace Honoo.BouncyCastle.NetStyles.X509
         /// <param name="thisUpdate">The time of this update.</param>
         /// <param name="nextUpdate">The time of anticipated next update.</param>
         /// <param name="others">The other certification revocation list.</param>
-        public byte[] GenerateDer(DateTime thisUpdate, DateTime nextUpdate, X509Crl[] others)
+        public byte[] GenerateDer(DateTime thisUpdate, DateTime nextUpdate, params X509Crl[] others)
         {
             X509Crl crl = GenerateCore(thisUpdate, nextUpdate, others);
             return crl.GetEncoded();
@@ -139,7 +139,7 @@ namespace Honoo.BouncyCastle.NetStyles.X509
         /// <param name="thisUpdate">The time of this update.</param>
         /// <param name="nextUpdate">The time of anticipated next update.</param>
         /// <param name="others">The other certification revocation list.</param>
-        public string GeneratePem(DateTime thisUpdate, DateTime nextUpdate, X509Crl[] others)
+        public string GeneratePem(DateTime thisUpdate, DateTime nextUpdate, params X509Crl[] others)
         {
             X509Crl crl = GenerateCore(thisUpdate, nextUpdate, others);
             using (StringWriter writer = new StringWriter())
@@ -150,7 +150,7 @@ namespace Honoo.BouncyCastle.NetStyles.X509
             }
         }
 
-        private X509Crl GenerateCore(DateTime thisUpdate, DateTime nextUpdate, X509Crl[] others)
+        private X509Crl GenerateCore(DateTime thisUpdate, DateTime nextUpdate, params X509Crl[] others)
         {
             ISignatureFactory signatureFactory = new Asn1SignatureFactory(_asn1Algorithm, _privateKey, Common.SecureRandom.Value);
             X509V2CrlGenerator generator = new X509V2CrlGenerator();

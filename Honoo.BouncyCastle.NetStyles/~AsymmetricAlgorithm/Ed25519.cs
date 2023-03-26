@@ -34,15 +34,7 @@ namespace Honoo.BouncyCastle.NetStyles
         { get => null; set { } }
 
         /// <inheritdoc/>
-        public SignatureAlgorithmName SignatureAlgorithmName
-        {
-            get
-            {
-                string mechanism = GetSignatureAlgorithmMechanism(_signatureInstance);
-                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
-                return algorithmName;
-            }
-        }
+        public SignatureAlgorithmName SignatureAlgorithmName => GetSignatureAlgorithmName(_signatureInstance);
 
         /// <summary>
         /// Represents the signature EdDSA instance (RFC-8032) used in the symmetric algorithm.

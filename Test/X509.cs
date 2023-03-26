@@ -32,12 +32,12 @@ namespace Test
             ISignatureAlgorithm issuerAlgorithm = AsymmetricAlgorithm.Create(_issuerSignatureAlgorithm);
             byte[] issuerPrivateKeyInfo = issuerAlgorithm.ExportKeyInfo(true);
             X509CertificateRequestGenerator issuerCsrGenerator = new X509CertificateRequestGenerator(_issuerSignatureAlgorithm, issuerPrivateKeyInfo);
-            issuerCsrGenerator.SubjectDN.Add(new X509NameEntity(X509NameLabel.C, "CN"));
-            issuerCsrGenerator.SubjectDN.Add(new X509NameEntity(X509NameLabel.CN, "Test CA"));
+            issuerCsrGenerator.SubjectDN.Add(X509NameLabel.C, "CN");
+            issuerCsrGenerator.SubjectDN.Add(X509NameLabel.CN, "Test CA");
             string issuerCsr = issuerCsrGenerator.GeneratePem();
             X509CertificateV3Generator v3Generator = new X509CertificateV3Generator(_issuerSignatureAlgorithm, issuerPrivateKeyInfo);
-            v3Generator.IssuerDN.Add(new X509NameEntity(X509NameLabel.C, "CN"));
-            v3Generator.IssuerDN.Add(new X509NameEntity(X509NameLabel.CN, "Test CA"));
+            v3Generator.IssuerDN.Add(X509NameLabel.C, "CN");
+            v3Generator.IssuerDN.Add(X509NameLabel.CN, "Test CA");
             v3Generator.SetCertificateRequest(issuerCsr);
             _issuerCer = v3Generator.Generate(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(365));
             _issuerPrivateKeyInfo = issuerPrivateKeyInfo;
@@ -95,13 +95,12 @@ namespace Test
                 v3generator.CertificateRequest.SubjectDN.Remove(X509NameLabel.EmailAddress);
             }
             byte[] userCer = v3generator.GenerateDer(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(99));
-
             //
             // User work, Verify.
             //
             File.WriteAllBytes("userCer.cer", userCer);
             var userCerBC = new Org.BouncyCastle.X509.X509Certificate(userCer);
-            var userCerNET = new System.Security.Cryptography.X509Certificates.X509Certificate2(userCer);
+            var userCerNET = new System.Security.Cryptography.X509Certificates.X509Certificate2(userCer); 
             try
             {
                 userCerBC.Verify(_issuerCer.GetPublicKey());

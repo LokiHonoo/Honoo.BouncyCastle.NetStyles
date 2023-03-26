@@ -31,6 +31,14 @@ namespace Honoo.BouncyCastle.NetStyles.X509
 
         #endregion Properties
 
+        #region Construction
+
+        internal X509NameCollection()
+        {
+        }
+
+        #endregion Construction
+
         /// <summary>
         /// Adds an item to the <see cref="X509NameCollection"/>.
         /// </summary>

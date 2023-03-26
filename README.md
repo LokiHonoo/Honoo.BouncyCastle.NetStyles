@@ -115,7 +115,7 @@ private static void Demo1()
     alg1.Mode = SymmetricCipherMode.CTR;
     alg1.Padding = SymmetricPaddingMode.TBC;
     Rijndael alg2 = new Rijndael(224) { Mode = SymmetricCipherMode.CTR, Padding = SymmetricPaddingMode.TBC };
-    byte[] key = new byte[160 / 8];  // 160 = Rijndael legal key size bits.
+    byte[] key = new byte[160 / 8];  // 160 = Rijndael224 legal key size bits.
     byte[] iv = new byte[224 / 8];   // 224 = CTR mode limit same as Rijndael block size bits.
     Buffer.BlockCopy(_keyExchangePms, 0, key, 0, key.Length);
     Buffer.BlockCopy(_keyExchangePms, 0, iv, 0, iv.Length);
@@ -148,25 +148,13 @@ private static void Demo3()
 private static void Demo1()
 {
     RSA rsa1 = new RSA();
-    string pem = rsa1.ExportPem(false);
+    string publicKeyPem = rsa1.ExportPem(false);
 
     RSA rsa2 = (RSA)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.RSA);
-    rsa2.ImportPem(pem);
+    rsa2.ImportPem(publicKeyPem);
 
     byte[] enc = rsa2.Encrypt(_input);
-    _ = rsa1.Decrypt(enc);
-}
-
-private static void Demo2()
-{
-    IAsymmetricEncryptionAlgorithm elGamal1 = new ElGamal().GetEncryptionInterface();
-    byte[] keyInfo = elGamal1.ExportKeyInfo(false);
-
-    IAsymmetricEncryptionAlgorithm elGamal2 = (IAsymmetricEncryptionAlgorithm)AsymmetricAlgorithm.Create(AsymmetricAlgorithmName.ElGamal);
-    elGamal1.ImportKeyInfo(keyInfo);
-
-    byte[] enc = elGamal2.Encrypt(_input);
-    _ = elGamal1.Decrypt(enc);
+    byte[] dec = rsa1.Decrypt(enc);
 }
 
 ```
@@ -178,13 +166,13 @@ private static void Demo2()
 private static void Demo()
 {
     ECDSA alg1 = (ECDSA)AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA);
-    string pem = alg1.ExportPem(false);
+    string publicKeyPem = alg1.ExportPem(false);
     byte[] signature = alg1.SignFinal(_input);
 
     if (SignatureAlgorithmName.TryGetAlgorithmName("sha256withecdsa", out SignatureAlgorithmName name))
     {
-        IAsymmetricSignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(name).GetSignatureInterface();
-        alg2.ImportPem(pem);
+        ISignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(name);
+        alg2.ImportPem(publicKeyPem);
 
         alg2.VerifyUpdate(_input);
         bool same = alg2.VerifyFinal(signature);
@@ -203,7 +191,7 @@ private static void CreateCACert()
     // Issuer work, Create CA private key and self sign certificate.
     //
     _issuerSignatureAlgorithm = SignatureAlgorithmName.SHA256withECDSA;
-    AsymmetricAlgorithm issuerAlgorithm = AsymmetricAlgorithm.Create(_issuerSignatureAlgorithm);
+    ISignatureAlgorithm issuerAlgorithm = AsymmetricAlgorithm.Create(_issuerSignatureAlgorithm);
     byte[] issuerPrivateKeyInfo = issuerAlgorithm.ExportKeyInfo(true);
     X509CertificateRequestGenerator issuerCsrGenerator = new X509CertificateRequestGenerator(_issuerSignatureAlgorithm, issuerPrivateKeyInfo);
     issuerCsrGenerator.SubjectDN.Add(X509NameLabel.C, "CN");
@@ -223,7 +211,7 @@ private static void CreateUserCert()
     // Issuer work, Create key for subject.
     //
     SignatureAlgorithmName userSignatureAlgorithm = SignatureAlgorithmName.SM3withSM2; //Issuer define of allow user specify.
-    AsymmetricAlgorithm issuerCreateAlgorithmForSubject = AsymmetricAlgorithm.Create(userSignatureAlgorithm);
+    ISignatureAlgorithm issuerCreateAlgorithmForSubject = AsymmetricAlgorithm.Create(userSignatureAlgorithm);
     string algorithmMechanism = userSignatureAlgorithm.Oid; // Send to user
     byte[] userPrivateKeyInfo = issuerCreateAlgorithmForSubject.ExportKeyInfo(true); // Send to user
     Org.BouncyCastle.Crypto.AsymmetricKeyParameter userPublicKey = issuerCreateAlgorithmForSubject.ExportParameters(false);
@@ -233,34 +221,32 @@ private static void CreateUserCert()
     //
     SignatureAlgorithmName.TryGetAlgorithmName(algorithmMechanism, out SignatureAlgorithmName userAlgorithmName);
     X509CertificateRequestGenerator userCreateCsr = new X509CertificateRequestGenerator(userAlgorithmName, userPrivateKeyInfo);
-    userCreateCsr.SubjectDN.Add(X509NameLabel.C, "CN");
-    userCreateCsr.SubjectDN.Add(X509NameLabel.CN, "Test Subject Porject Name");
-    userCreateCsr.SubjectDN.Add(X509NameLabel.EmailAddress, "abc999@test111222.com");
-    var asn1 = new DerOctetString(new BasicConstraints(true));
-    userCreateCsr.Extensions.Add(X509ExtensionLabel.BasicConstraints, new X509Extension(true, asn1));
+    userCreateCsr.SubjectDN.Add(new X509NameEntity(X509NameLabel.C, "CN"));
+    userCreateCsr.SubjectDN.Add(new X509NameEntity(X509NameLabel.CN, "Test Subject Porject Name"));
+    userCreateCsr.SubjectDN.Add(new X509NameEntity(X509NameLabel.EmailAddress, "abc999@test111222.com"));
+    Asn1Encodable asn1 = new BasicConstraints(false);
+    userCreateCsr.Extensions.Add(new X509ExtensionEntity(X509ExtensionLabel.BasicConstraints, true, asn1));
     byte[] csrPem = userCreateCsr.GenerateDer(); // Send to issuer
 
     //
     // Issuer work, Load certificate request and create certificate.
     //
     X509CertificateV3Generator v3generator = new X509CertificateV3Generator(_issuerSignatureAlgorithm, _issuerPrivateKeyInfo);
-    v3generator.IssuerDN.Add(X509NameLabel.C, "CN");
-    v3generator.IssuerDN.Add(X509NameLabel.CN, "Test CA Sign");
-    var asn2 = new DerOctetString(new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.DataEncipherment));
-    v3generator.Extensions.Add(X509ExtensionLabel.KeyUsage, new X509Extension(true, asn2));
+    v3generator.IssuerDN.CopyFromSubjectDN(_issuerCer);
+    Asn1Encodable asn2 = new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.DataEncipherment);
+    v3generator.Extensions.Add(new X509ExtensionEntity(X509ExtensionLabel.KeyUsage, false, asn2));
     v3generator.SetCertificateRequest(csrPem);
     if (v3generator.CertificateRequest.Verify(userPublicKey))
     {
         v3generator.CertificateRequest.SubjectDN.Remove(X509NameLabel.EmailAddress);
     }
     byte[] userCer = v3generator.GenerateDer(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(99));
-
     //
     // User work, Verify.
     //
     File.WriteAllBytes("userCer.cer", userCer);
     var userCerBC = new Org.BouncyCastle.X509.X509Certificate(userCer);
-    var userCerNET = new System.Security.Cryptography.X509Certificates.X509Certificate2(userCer);
+    var userCerNET = new System.Security.Cryptography.X509Certificates.X509Certificate2(userCer); 
     try
     {
         userCerBC.Verify(_issuerCer.GetPublicKey());
@@ -285,8 +271,8 @@ private static void CreateUserCert()
 
 private static void Demo()
 {
-    IKeyExchangeA keA = new ECDH().GetKeyExchangeAInterface();
-    IKeyExchangeB keB = new ECDH().GetKeyExchangeBInterface();
+    IKeyExchangeTerminalA keA = new ECDH().GetTerminalA();
+    IKeyExchangeTerminalB keB = new ECDH().GetTerminalB();
 
     // Alice work
     keA.GenerateParameters(384);

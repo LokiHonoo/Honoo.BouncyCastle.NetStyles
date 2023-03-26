@@ -9,9 +9,7 @@ using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.Pkcs;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Utilities;
-using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace Honoo.BouncyCastle.NetStyles
@@ -32,18 +30,11 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <summary>
         /// Ed448 not need hash algorithm. It's null always.
         /// </summary>
-        public HashAlgorithmName HashAlgorithmName { get => null; set { } }
+        public HashAlgorithmName HashAlgorithmName
+        { get => null; set { } }
 
         /// <inheritdoc/>
-        public SignatureAlgorithmName SignatureAlgorithmName
-        {
-            get
-            {
-                string mechanism = GetSignatureAlgorithmMechanism(_signatureInstance);
-                SignatureAlgorithmName.TryGetAlgorithmName(mechanism, out SignatureAlgorithmName algorithmName);
-                return algorithmName;
-            }
-        }
+        public SignatureAlgorithmName SignatureAlgorithmName => GetSignatureAlgorithmName(_signatureInstance);
 
         /// <summary>
         /// Represents the signature EdDSA instance (RFC-8032) used in the symmetric algorithm.

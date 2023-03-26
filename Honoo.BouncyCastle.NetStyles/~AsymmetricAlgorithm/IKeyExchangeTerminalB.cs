@@ -1,9 +1,9 @@
 ﻿namespace Honoo.BouncyCastle.NetStyles
 {
     /// <summary>
-    /// Key exchange algorithm party B's interface.
+    /// Key exchange algorithm terminal B's interface.
     /// </summary>
-    public interface IKeyExchangeB
+    public interface IKeyExchangeTerminalB
     {
         /// <summary>
         /// Gets key size bits.
@@ -21,7 +21,7 @@
         string Name { get; }
 
         /// <summary>
-        /// Sand this value to party A.
+        /// Sand this value to terminal A.
         /// </summary>
         byte[] PublicKeyB { get; }
 
@@ -33,11 +33,11 @@
         byte[] DeriveKeyMaterial(bool unsigned);
 
         /// <summary>
-        /// Generate new parameters of algorithm party B, Using by party A's qualified parameters.
+        /// Generate new parameters of algorithm terminal B, Using by terminal A's qualified parameters.
         /// </summary>
-        /// <param name="p">The party A's P value.</param>
-        /// <param name="g">The party A's G value.</param>
-        /// <param name="publicKeyA">The party A's public key blob.</param>
+        /// <param name="p">The terminal A's P value.</param>
+        /// <param name="g">The terminal A's G value.</param>
+        /// <param name="publicKeyA">The terminal A's public key blob.</param>
         void GenerateParameters(byte[] p, byte[] g, byte[] publicKeyA);
     }
 }

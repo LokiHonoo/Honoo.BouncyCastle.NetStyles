@@ -15,7 +15,7 @@ namespace Honoo.BouncyCastle.NetStyles
     /// <summary>
     /// Using the BouncyCastle implementation of the algorithm.
     /// </summary>
-    public sealed class ECDH : AsymmetricAlgorithm, IKeyExchangeA, IKeyExchangeB
+    public sealed class ECDH : AsymmetricAlgorithm, IKeyExchangeTerminalA, IKeyExchangeTerminalB
     {
         #region Properties
 
@@ -52,6 +52,9 @@ namespace Honoo.BouncyCastle.NetStyles
 
         /// <inheritdoc/>
         public int KeySize => _keySize;
+
+        /// <inheritdoc/>
+        public KeySizes[] LegalKeySizes => (KeySizes[])LEGAL_KEY_SIZES.Clone();
 
         /// <inheritdoc/>
         public byte[] P
@@ -92,19 +95,19 @@ namespace Honoo.BouncyCastle.NetStyles
         #region Interfaces
 
         /// <summary>
-        /// Gets key exchange algorithm party A's interface.
+        /// Gets key exchange algorithm terminal A's interface.
         /// </summary>
         /// <returns></returns>
-        public IKeyExchangeA GetKeyExchangeAInterface()
+        public IKeyExchangeTerminalA GetTerminalA()
         {
             return this;
         }
 
         /// <summary>
-        /// Gets key exchange algorithm party B's interface.
+        /// Gets key exchange algorithm terminal B's interface.
         /// </summary>
         /// <returns></returns>
-        public IKeyExchangeB GetKeyExchangeBInterface()
+        public IKeyExchangeTerminalB GetTerminalB()
         {
             return this;
         }
@@ -265,12 +268,7 @@ namespace Honoo.BouncyCastle.NetStyles
             return new ECDH();
         }
 
-        /// <summary>
-        /// Determines whether the specified size is valid for the current algorithm.
-        /// </summary>
-        /// <param name="keySize">Legal key size 192, 224, 239, 256, 384, 521.</param>
-        /// <param name="exception">Exception message.</param>
-        /// <returns></returns>
+        /// <inheritdoc/>
         public bool ValidKeySize(int keySize, out string exception)
         {
             if (DetectionUtilities.ValidSize(LEGAL_KEY_SIZES, keySize))

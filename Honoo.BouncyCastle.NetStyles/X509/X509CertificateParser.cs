@@ -29,15 +29,6 @@ namespace Honoo.BouncyCastle.NetStyles.X509
         /// <summary>
         /// Initializes a new instance of the X509CertificateParser class.
         /// </summary>
-        /// <param name="certificate">A byte array of <see cref="System.Security.Cryptography.X509Certificates.X509Certificate2"/>.</param>
-        public X509CertificateParser(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate)
-        {
-            _certificate = new X509Certificate(certificate.GetRawCertData());
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the X509CertificateParser class.
-        /// </summary>
         /// <param name="pem">Pem string of X509 certificate.</param>
         public X509CertificateParser(string pem)
         {
@@ -75,15 +66,6 @@ namespace Honoo.BouncyCastle.NetStyles.X509
         public byte[] ToDer()
         {
             return _certificate.GetEncoded();
-        }
-
-        /// <summary>
-        /// Parse to <see cref="X509Certificate"/>.
-        /// </summary>
-        /// <returns></returns>
-        public System.Security.Cryptography.X509Certificates.X509Certificate2 ToNetCertificate()
-        {
-            return new System.Security.Cryptography.X509Certificates.X509Certificate2(_certificate.GetEncoded());
         }
 
         /// <summary>

@@ -28,6 +28,14 @@ namespace Honoo.BouncyCastle.NetStyles.X509
 
         #endregion Properties
 
+        #region Construction
+
+        internal X509CertificateRevocationCollection()
+        {
+        }
+
+        #endregion Construction
+
         /// <summary>
         /// Adds an item to the <see cref="X509CertificateRevocationCollection"/>.
         /// </summary>

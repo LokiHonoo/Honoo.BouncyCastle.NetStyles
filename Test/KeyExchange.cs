@@ -1,6 +1,7 @@
 ﻿using Honoo.BouncyCastle.NetStyles;
 using System;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace Test
 {
@@ -14,9 +15,9 @@ namespace Test
 
         private static void Demo()
         {
-            IKeyExchangeA keA = new ECDH().GetKeyExchangeAInterface();
-            IKeyExchangeB keB = new ECDH().GetKeyExchangeBInterface();
-
+            IKeyExchangeTerminalA keA = new ECDH().GetTerminalA();
+            IKeyExchangeTerminalB keB = new ECDH().GetTerminalB();
+        
             // Alice work
             keA.GenerateParameters(384);
             byte[] p = keA.P;

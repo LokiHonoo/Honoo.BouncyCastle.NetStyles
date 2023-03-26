@@ -41,13 +41,13 @@ namespace Test
         private static void Demo()
         {
             ECDSA alg1 = (ECDSA)AsymmetricAlgorithm.Create(SignatureAlgorithmName.SHA256withECDSA);
-            string pem = alg1.ExportPem(false);
+            string publicKeyPem = alg1.ExportPem(false);
             byte[] signature = alg1.SignFinal(_input);
 
             if (SignatureAlgorithmName.TryGetAlgorithmName("sha256withecdsa", out SignatureAlgorithmName name))
             {
                 ISignatureAlgorithm alg2 = AsymmetricAlgorithm.Create(name);
-                alg2.ImportPem(pem);
+                alg2.ImportPem(publicKeyPem);
 
                 alg2.VerifyUpdate(_input);
                 bool same = alg2.VerifyFinal(signature);
