@@ -1,4 +1,6 @@
-﻿namespace Honoo.BouncyCastle.NetStyles
+﻿using System;
+
+namespace Honoo.BouncyCastle.NetStyles
 {
     /// <summary>
     /// Represents the abstract base class from which all implementations of hash algorithms must inherit.
@@ -55,7 +57,12 @@
         /// Compute data hash.
         /// </summary>
         /// <returns></returns>
-        public abstract byte[] ComputeFinal();
+        public byte[] ComputeFinal()
+        {
+            byte[] result = new byte[_hashSize];
+            ComputeFinal(result, 0);
+            return result;
+        }
 
         /// <summary>
         /// Compute data hash.
@@ -70,13 +77,39 @@
         /// <summary>
         /// Compute data hash.
         /// </summary>
-        /// <param name="buffer">The data buffer to be hash.</param>
+        /// <param name="inputBuffer">The data buffer to be hash.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
-        public byte[] ComputeFinal(byte[] buffer, int offset, int length)
+        public byte[] ComputeFinal(byte[] inputBuffer, int offset, int length)
         {
-            Update(buffer, offset, length);
+            Update(inputBuffer, offset, length);
             return ComputeFinal();
+        }
+
+        /// <summary>
+        /// Compute data hash.
+        /// <br/>Write to output buffer and return hash byte length.
+        /// </summary>
+        /// <param name="outputBuffer">Output buffer.</param>
+        /// <param name="offset">Write start offset from buffer.</param>
+        /// <returns></returns>
+        public abstract int ComputeFinal(byte[] outputBuffer, int offset);
+
+        /// <summary>
+        /// Compute data hash.
+        /// <br/>Write to output buffer and return hash byte length.
+        /// </summary>
+        /// <param name="inputBuffer">The data buffer to be hash.</param>
+        /// <param name="inputOffset">Read start offset from buffer.</param>
+        /// <param name="inputLength">Read length from buffer.</param>
+        /// <param name="outputBuffer">Output buffer.</param>
+        /// <param name="outputOffset">Write start offset from buffer.</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public int ComputeFinal(byte[] inputBuffer, int inputOffset, int inputLength, byte[] outputBuffer, int outputOffset)
+        {
+            Update(inputBuffer, inputOffset, inputLength);
+            return ComputeFinal(outputBuffer, outputOffset);
         }
 
         /// <summary>
@@ -105,9 +138,9 @@
         /// <summary>
         /// Compute data hash.
         /// </summary>
-        /// <param name="buffer">The data buffer to be hash.</param>
+        /// <param name="inputBuffer">The data buffer to be hash.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
-        public abstract void Update(byte[] buffer, int offset, int length);
+        public abstract void Update(byte[] inputBuffer, int offset, int length);
     }
 }

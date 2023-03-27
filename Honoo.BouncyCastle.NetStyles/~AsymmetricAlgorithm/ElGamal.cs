@@ -255,26 +255,26 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public byte[] Decrypt(byte[] buffer, int offset, int length)
+        public byte[] Decrypt(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             if (_decryptor == null)
             {
                 _decryptor = GetCipher(false, null, null);
             }
-            return _decryptor.ProcessBlock(buffer, offset, length);
+            return _decryptor.ProcessBlock(inputBuffer, offset, length);
         }
 
         /// <summary>
         /// Decrypts data with the asymmetric algorithm. Need set <see cref="Padding"/> = <see cref="AsymmetricEncryptionPaddingMode.OAEP"/>.
         /// </summary>
-        /// <param name="buffer">The encrypted data buffer.</param>
+        /// <param name="inputBuffer">The encrypted data buffer.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
         /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
         /// <returns></returns>
-        public byte[] Decrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
+        public byte[] Decrypt(byte[] inputBuffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
         {
             if (_padding != AsymmetricEncryptionPaddingMode.OAEP)
             {
@@ -282,7 +282,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             InspectParameters();
             _decryptor = GetCipher(false, hashForOAEP, mgf1ForOAEP);
-            return _decryptor.ProcessBlock(buffer, offset, length);
+            return _decryptor.ProcessBlock(inputBuffer, offset, length);
         }
 
         /// <inheritdoc/>
@@ -292,26 +292,26 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public byte[] Encrypt(byte[] buffer, int offset, int length)
+        public byte[] Encrypt(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             if (_encryptor == null)
             {
                 _encryptor = GetCipher(true, null, null);
             }
-            return _encryptor.ProcessBlock(buffer, offset, length);
+            return _encryptor.ProcessBlock(inputBuffer, offset, length);
         }
 
         /// <summary>
         /// Encrypts data with the asymmetric algorithm. Need set <see cref="Padding"/> = <see cref="AsymmetricEncryptionPaddingMode.OAEP"/>.
         /// </summary>
-        /// <param name="buffer">The data buffer to be encrypted.</param>
+        /// <param name="inputBuffer">The data buffer to be encrypted.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
         /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
         /// <returns></returns>
-        public byte[] Encrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
+        public byte[] Encrypt(byte[] inputBuffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
         {
             if (_padding != AsymmetricEncryptionPaddingMode.OAEP)
             {
@@ -319,7 +319,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             InspectParameters();
             _encryptor = GetCipher(true, hashForOAEP, mgf1ForOAEP);
-            return _encryptor.ProcessBlock(buffer, offset, length);
+            return _encryptor.ProcessBlock(inputBuffer, offset, length);
         }
 
         /// <inheritdoc/>

@@ -462,26 +462,26 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public byte[] Decrypt(byte[] buffer, int offset, int length)
+        public byte[] Decrypt(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             if (_decryptor == null)
             {
                 _decryptor = GetCipher(false, null, null);
             }
-            return _decryptor.ProcessBlock(buffer, offset, length);
+            return _decryptor.ProcessBlock(inputBuffer, offset, length);
         }
 
         /// <summary>
         /// Decrypts data with the asymmetric algorithm. Need set <see cref="Padding"/> = <see cref="AsymmetricEncryptionPaddingMode.OAEP"/>.
         /// </summary>
-        /// <param name="buffer">The encrypted data buffer.</param>
+        /// <param name="inputBuffer">The encrypted data buffer.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
         /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
         /// <returns></returns>
-        public byte[] Decrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
+        public byte[] Decrypt(byte[] inputBuffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
         {
             if (_padding != AsymmetricEncryptionPaddingMode.OAEP)
             {
@@ -489,7 +489,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             InspectParameters();
             _decryptor = GetCipher(false, hashForOAEP, mgf1ForOAEP);
-            return _decryptor.ProcessBlock(buffer, offset, length);
+            return _decryptor.ProcessBlock(inputBuffer, offset, length);
         }
 
         /// <inheritdoc/>
@@ -499,26 +499,26 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public byte[] Encrypt(byte[] buffer, int offset, int length)
+        public byte[] Encrypt(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             if (_encryptor == null)
             {
                 _encryptor = GetCipher(true, null, null);
             }
-            return _encryptor.ProcessBlock(buffer, offset, length);
+            return _encryptor.ProcessBlock(inputBuffer, offset, length);
         }
 
         /// <summary>
         /// Encrypts data with the asymmetric algorithm. Need set <see cref="Padding"/> = <see cref="AsymmetricEncryptionPaddingMode.OAEP"/>.
         /// </summary>
-        /// <param name="buffer">The data buffer to be encrypted.</param>
+        /// <param name="inputBuffer">The data buffer to be encrypted.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <param name="hashForOAEP">The hash algorithm name for OAEP padding.</param>
         /// <param name="mgf1ForOAEP">The mgf1 algorithm name for OAEP padding.</param>
         /// <returns></returns>
-        public byte[] Encrypt(byte[] buffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
+        public byte[] Encrypt(byte[] inputBuffer, int offset, int length, HashAlgorithmName hashForOAEP, HashAlgorithmName mgf1ForOAEP)
         {
             if (_padding != AsymmetricEncryptionPaddingMode.OAEP)
             {
@@ -526,7 +526,7 @@ namespace Honoo.BouncyCastle.NetStyles
             }
             InspectParameters();
             _encryptor = GetCipher(true, hashForOAEP, mgf1ForOAEP);
-            return _encryptor.ProcessBlock(buffer, offset, length);
+            return _encryptor.ProcessBlock(inputBuffer, offset, length);
         }
 
         /// <inheritdoc/>
@@ -584,9 +584,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public byte[] SignFinal(byte[] buffer, int offset, int length)
+        public byte[] SignFinal(byte[] inputBuffer, int offset, int length)
         {
-            SignUpdate(buffer, offset, length);
+            SignUpdate(inputBuffer, offset, length);
             return SignFinal();
         }
 
@@ -597,11 +597,11 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void SignUpdate(byte[] buffer, int offset, int length)
+        public void SignUpdate(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             InspectSigner(true);
-            _signer.BlockUpdate(buffer, offset, length);
+            _signer.BlockUpdate(inputBuffer, offset, length);
         }
 
         /// <inheritdoc/>
@@ -620,9 +620,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public bool VerifyFinal(byte[] buffer, int offset, int length, byte[] signature)
+        public bool VerifyFinal(byte[] inputBuffer, int offset, int length, byte[] signature)
         {
-            VerifyUpdate(buffer, offset, length);
+            VerifyUpdate(inputBuffer, offset, length);
             return VerifyFinal(signature);
         }
 
@@ -633,11 +633,11 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void VerifyUpdate(byte[] buffer, int offset, int length)
+        public void VerifyUpdate(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             InspectSigner(false);
-            _verifier.BlockUpdate(buffer, offset, length);
+            _verifier.BlockUpdate(inputBuffer, offset, length);
         }
 
         #endregion Signature

@@ -244,18 +244,18 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <summary>
         /// Decrypts data with the symmetric algorithm.
         /// </summary>
-        /// <param name="buffer">The encrypted data buffer.</param>
+        /// <param name="inputBuffer">The encrypted data buffer.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <returns></returns>
-        public byte[] DecryptFinal(byte[] buffer, int offset, int length)
+        public byte[] DecryptFinal(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             if (_decryptor == null)
             {
                 _decryptor = GetCipher(false);
             }
-            byte[] result = _decryptor.DoFinal(buffer, offset, length);
+            byte[] result = _decryptor.DoFinal(inputBuffer, offset, length);
             FixDecrypted();
             return result;
         }
@@ -264,19 +264,19 @@ namespace Honoo.BouncyCastle.NetStyles
         /// Decrypts data with the symmetric algorithm. Return write length of output.
         /// </summary>
         /// <param name="inputBuffer">The encrypted data buffer.</param>
-        /// <param name="inOffset">The starting offset to read.</param>
-        /// <param name="inLength">The length to read.</param>
+        /// <param name="inputOffset">The starting offset to read.</param>
+        /// <param name="inputLength">The length to read.</param>
         /// <param name="outputBuffer">The output buffer to write.</param>
-        /// <param name="outOffset">The starting offset to write.</param>
+        /// <param name="outputOffset">The starting offset to write.</param>
         /// <returns></returns>
-        public int DecryptUpdate(byte[] inputBuffer, int inOffset, int inLength, byte[] outputBuffer, int outOffset)
+        public int DecryptUpdate(byte[] inputBuffer, int inputOffset, int inputLength, byte[] outputBuffer, int outputOffset)
         {
             InspectParameters();
             if (_decryptor == null)
             {
                 _decryptor = GetCipher(false);
             }
-            return _decryptor.ProcessBytes(inputBuffer, inOffset, inLength, outputBuffer, outOffset);
+            return _decryptor.ProcessBytes(inputBuffer, inputOffset, inputLength, outputBuffer, outputOffset);
         }
 
         /// <summary>
@@ -308,18 +308,18 @@ namespace Honoo.BouncyCastle.NetStyles
         /// <summary>
         /// Encrypts data with the symmetric algorithm.
         /// </summary>
-        /// <param name="buffer">The data buffer to be decrypted.</param>
+        /// <param name="inputBuffer">The data buffer to be decrypted.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <returns></returns>
-        public byte[] EncryptFinal(byte[] buffer, int offset, int length)
+        public byte[] EncryptFinal(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             if (_encryptor == null)
             {
                 _encryptor = GetCipher(true);
             }
-            byte[] result = _encryptor.DoFinal(buffer, offset, length);
+            byte[] result = _encryptor.DoFinal(inputBuffer, offset, length);
             FixEncrypted();
             return result;
         }
@@ -328,19 +328,19 @@ namespace Honoo.BouncyCastle.NetStyles
         /// Encrypts data with the symmetric algorithm. Return write length of output.
         /// </summary>
         /// <param name="inputBuffer">The data buffer to be decrypted.</param>
-        /// <param name="inOffset">The starting offset to read.</param>
-        /// <param name="inLength">The length to read.</param>
+        /// <param name="inputOffset">The starting offset to read.</param>
+        /// <param name="inputLength">The length to read.</param>
         /// <param name="outputBuffer">The output buffer to write.</param>
-        /// <param name="outOffset">The starting offset to write.</param>
+        /// <param name="outputOffset">The starting offset to write.</param>
         /// <returns></returns>
-        public int EncryptUpdate(byte[] inputBuffer, int inOffset, int inLength, byte[] outputBuffer, int outOffset)
+        public int EncryptUpdate(byte[] inputBuffer, int inputOffset, int inputLength, byte[] outputBuffer, int outputOffset)
         {
             InspectParameters();
             if (_encryptor == null)
             {
                 _encryptor = GetCipher(true);
             }
-            return _encryptor.ProcessBytes(inputBuffer, inOffset, inLength, outputBuffer, outOffset);
+            return _encryptor.ProcessBytes(inputBuffer, inputOffset, inputLength, outputBuffer, outputOffset);
         }
 
         #endregion Encryption

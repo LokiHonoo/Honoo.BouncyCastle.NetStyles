@@ -239,9 +239,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public byte[] SignFinal(byte[] buffer, int offset, int length)
+        public byte[] SignFinal(byte[] inputBuffer, int offset, int length)
         {
-            SignUpdate(buffer, offset, length);
+            SignUpdate(inputBuffer, offset, length);
             return SignFinal();
         }
 
@@ -252,11 +252,11 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void SignUpdate(byte[] buffer, int offset, int length)
+        public void SignUpdate(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             InspectSigner(true);
-            _signer.BlockUpdate(buffer, offset, length);
+            _signer.BlockUpdate(inputBuffer, offset, length);
         }
 
         /// <inheritdoc/>
@@ -275,9 +275,9 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public bool VerifyFinal(byte[] buffer, int offset, int length, byte[] signature)
+        public bool VerifyFinal(byte[] inputBuffer, int offset, int length, byte[] signature)
         {
-            VerifyUpdate(buffer, offset, length);
+            VerifyUpdate(inputBuffer, offset, length);
             return VerifyFinal(signature);
         }
 
@@ -288,11 +288,11 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public void VerifyUpdate(byte[] buffer, int offset, int length)
+        public void VerifyUpdate(byte[] inputBuffer, int offset, int length)
         {
             InspectParameters();
             InspectSigner(false);
-            _verifier.BlockUpdate(buffer, offset, length);
+            _verifier.BlockUpdate(inputBuffer, offset, length);
         }
 
         #endregion Signature

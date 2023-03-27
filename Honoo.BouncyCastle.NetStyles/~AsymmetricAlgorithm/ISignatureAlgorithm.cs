@@ -35,10 +35,10 @@
         /// <summary>
         /// Signs the specified input bytes using the specified hash algorithm.
         /// </summary>
-        /// <param name="buffer">The input data of buffer for which to sign.</param>
+        /// <param name="inputBuffer">The input data of buffer for which to sign.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
-        byte[] SignFinal(byte[] buffer, int offset, int length);
+        byte[] SignFinal(byte[] inputBuffer, int offset, int length);
 
         /// <summary>
         /// Signs the specified input bytes using the specified hash algorithm.
@@ -49,10 +49,10 @@
         /// <summary>
         /// Signs the specified input bytes using the specified hash algorithm.
         /// </summary>
-        /// <param name="buffer">The data buffer.</param>
+        /// <param name="inputBuffer">The data buffer.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
-        void SignUpdate(byte[] buffer, int offset, int length);
+        void SignUpdate(byte[] inputBuffer, int offset, int length);
 
         /// <summary>
         /// Verifies that a digital signature of the specified input bytes using the specified hash algorithm.
@@ -71,11 +71,11 @@
         /// <summary>
         /// Verifies that a digital signature of the specified input bytes using the specified hash algorithm.
         /// </summary>
-        /// <param name="buffer">The input data buffer for which to compute the hash.</param>
+        /// <param name="inputBuffer">The input data buffer for which to compute the hash.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <param name="signature">The signature data to be verified.</param>
-        bool VerifyFinal(byte[] buffer, int offset, int length, byte[] signature);
+        bool VerifyFinal(byte[] inputBuffer, int offset, int length, byte[] signature);
 
         /// <summary>
         /// Verifies that a digital signature of the specified input bytes using the specified hash algorithm.
@@ -86,9 +86,9 @@
         /// <summary>
         /// Verifies that a digital signature of the specified input bytes using the specified hash algorithm.
         /// </summary>
-        /// <param name="buffer">The data buffer.</param>
+        /// <param name="inputBuffer">The data buffer.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
-        void VerifyUpdate(byte[] buffer, int offset, int length);
+        void VerifyUpdate(byte[] inputBuffer, int offset, int length);
     }
 }

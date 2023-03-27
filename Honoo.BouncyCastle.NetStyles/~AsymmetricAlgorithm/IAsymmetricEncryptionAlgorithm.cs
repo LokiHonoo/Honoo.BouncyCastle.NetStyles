@@ -15,11 +15,11 @@
         /// <summary>
         /// Decrypts data with the asymmetric algorithm.
         /// </summary>
-        /// <param name="buffer">The encrypted data buffer.</param>
+        /// <param name="inputBuffer">The encrypted data buffer.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <returns></returns>
-        byte[] Decrypt(byte[] buffer, int offset, int length);
+        byte[] Decrypt(byte[] inputBuffer, int offset, int length);
 
         /// <summary>
         /// Encrypts data with the asymmetric algorithm.
@@ -31,11 +31,11 @@
         /// <summary>
         /// Encrypts data with the asymmetric algorithm.
         /// </summary>
-        /// <param name="buffer">The data buffer to be encrypted.</param>
+        /// <param name="inputBuffer">The data buffer to be encrypted.</param>
         /// <param name="offset">The starting offset to read.</param>
         /// <param name="length">The length to read.</param>
         /// <returns></returns>
-        byte[] Encrypt(byte[] buffer, int offset, int length);
+        byte[] Encrypt(byte[] inputBuffer, int offset, int length);
 
         /// <summary>
         /// Gets legal input bytes length.

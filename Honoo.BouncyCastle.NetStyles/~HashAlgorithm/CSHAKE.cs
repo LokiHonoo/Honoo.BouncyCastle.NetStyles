@@ -53,15 +53,14 @@ namespace Honoo.BouncyCastle.NetStyles
         }
 
         /// <inheritdoc/>
-        public override byte[] ComputeFinal()
+        public override int ComputeFinal(byte[] outputBuffer, int offset)
         {
             if (_digest == null)
             {
                 _digest = GetDigest();
             }
-            byte[] hash = new byte[_hashSize / 8];
-            _digest.DoFinal(hash, 0);
-            return hash;
+            _digest.DoFinal(outputBuffer, offset);
+            return _hashSize / 8;
         }
 
         /// <inheritdoc/>
